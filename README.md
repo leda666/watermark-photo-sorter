@@ -6,7 +6,7 @@
 
 ![license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
-![platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+![platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-blue.svg)
 
 ---
 
@@ -36,8 +36,8 @@
 
 ### 环境要求
 
-- Node.js **18 或更高**（推荐 20/22）
-- Windows 10/11（主引擎为 Windows x64 二进制；macOS / Linux 可用兜底引擎）
+- 系统：**Windows 10 / 11（x64）** —— 主 OCR 引擎仅提供 Windows 版二进制，本工具仅在此环境测试与支持
+- Node.js **18 或更高**（推荐 20/22；使用 Release 完整包则无需安装）
 
 ### 安装
 
@@ -58,15 +58,13 @@ Windows 用户也可直接双击 `start.bat` 启动、`stop.bat` 停止。**删�
 **不装主引擎也能用**：跳过 `npm run setup` 时会自动使用 Tesseract.js 兜底引擎（慢一些、准确率低一些）。
 手动安装引擎的方式见 [`engine/README.md`](engine/README.md)。
 
-端口被占用时可以换一个：
+端口被占用时可以换一个（程序默认也会自动顺延，一般无需手动指定）：
 
 ```bash
 # Windows CMD
 set PORT=3880 && npm start
 # PowerShell
 $env:PORT=3880; npm start
-# macOS / Linux
-PORT=3880 npm start
 ```
 
 ## 📖 使用
