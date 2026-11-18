@@ -56,4 +56,5 @@ echo.
 "%NODE_BIN%" server.js --wmsorter
 echo.
 echo 服务已退出。若上方有报错，请截图反馈。
+if /i "%~1"=="silent" exit /b 0
 pause
