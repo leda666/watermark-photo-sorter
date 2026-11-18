@@ -772,7 +772,7 @@ app.post('/api/rerun', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  log(`水印照片智能分类 v1.2.1 已启动：http://localhost:${PORT}`);
+  log(`水印照片智能分类 v1.2.2 已启动：http://localhost:${PORT}`);
   const lanIPs = Object.values(os.networkInterfaces()).flat()
     .filter(i => i && i.family === 'IPv4' && !i.internal).map(i => i.address);
   if (lanIPs.length) log(`局域网访问：${lanIPs.map(ip => `http://${ip}:${PORT}`).join('   ')}（同一 Wi-Fi/网段的其他设备可用，需放行防火墙）`);

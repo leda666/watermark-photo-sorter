@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>水印照片智能分类 v1.2.1</title>
+<title>水印照片智能分类 v1.2.2</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -203,7 +203,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>水印照片智能分类<span class="ver" onclick="showAbout()" title="点击查看程序介绍 / 教程 / 版权">v1.2.1 · 带学习</span></h1>
+  <h1>水印照片智能分类<span class="ver" onclick="showAbout()" title="点击查看程序介绍 / 教程 / 版权">v1.2.2 · 带学习</span></h1>
   <div class="sub">识别照片时间水印并按 <b>年.月.日</b> 归档 · 点击照片查看大图 / 实时调参 / 框选识别区域 / 纠错学习 · localhost:3872</div>
 
   <section>
@@ -1798,7 +1798,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = 
   <div id="aboutCard" onclick="event.stopPropagation()">
     <button class="lb-close" id="aboutClose" title="关闭" onclick="$('aboutMask').style.display='none'">✕</button>
     <h3>水印照片智能分类</h3>
-    <span class="ver-badge">v1.2.1 · PaddleOCR 系引擎 · 离线运行</span>
+    <span class="ver-badge">v1.2.2 · PaddleOCR 系引擎 · 离线运行</span>
     <h4>程序介绍</h4>
     <p>本地离线的照片时间水印识别与归档工具：读取照片角落的日期水印（如 2026-05-08），自动按「年.月.日」建文件夹归类。全程本地运行，不上传任何照片与数据。</p>
     <h4>核心功能</h4>
@@ -1829,7 +1829,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = 
     <p><b>RapidOCR-json 引擎</b>（PaddleOCR PP-OCRv4 检测 + 识别模型，ONNX 离线推理，无需 Python/显卡）+ 自研日期提取（分隔符日期、紧凑日期、时间屏蔽、数字混淆修复）+ 日期约束过滤；Tesseract.js 保留为兜底引擎（引擎缺失时自动切换）。全程本地运行，单张约 0.6~1 秒。</p>
     <h4>更新记录</h4>
     <ul>
-      <li><b>v1.2.1</b>（当前）：更换 PaddleOCR 系引擎 RapidOCR-json，单张 0.6~1 秒；纠错学习接入新引擎（框选区域按尺寸复用）；界面精简（去掉「无水印」状态与「喂养学习」）</li>
+      <li><b>v1.2.2</b>（当前）：新增 stop.bat 一键停止（修复关闭后无法删除程序目录）；启动日志打印局域网访问地址；完整包内置 Node.js 运行时，解压即用免安装</li>
+      <li><b>v1.2.1</b>：更换 PaddleOCR 系引擎 RapidOCR-json，单张 0.6~1 秒；纠错学习接入新引擎（框选区域按尺寸复用）；界面精简（去掉「无水印」状态与「喂养学习」）</li>
       <li><b>v1.0.10</b>：工作日志按日期存档 + 日期下拉回查；参数配置区收缩；关于弹窗</li>
       <li><b>v1.0.9</b>：框选识别失效修复；实时识别日志；并行识别按 CPU 自适应</li>
       <li><b>v1.0.1 ~ v1.0.8</b>：初代 Tesseract.js 版本（智能参数、学习引擎、分组预览、灯箱调参、日志分类）</li>

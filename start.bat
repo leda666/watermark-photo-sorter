@@ -53,7 +53,7 @@ echo.
 echo 启动服务中，请稍候...
 echo 本机访问：http://localhost:3872
 echo.
-"%NODE_BIN%" server.js
+"%NODE_BIN%" server.js --wmsorter
 echo.
 echo 服务已退出。若上方有报错，请截图反馈。
 pause

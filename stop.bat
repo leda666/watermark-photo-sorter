@@ -5,7 +5,8 @@ cd /d "%~dp0"
 
 if /i not "%~1"=="quiet" echo 正在停止本目录下所有相关进程（node / RapidOCR 引擎）...
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$root = (Get-Location).Path; $list = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -in @('node.exe','RapidOCR-json.exe') -and ($_.ExecutablePath -like ($root + '*') -or $_.CommandLine -like ('*' + $root + '*')) }); if ($list.Count -eq 0) { Write-Host '[OK] 没有发现运行中的实例' } else { foreach ($p in $list) { Write-Host ('[STOP] ' + $p.Name + '  PID=' + $p.ProcessId); Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } }"
+REM 匹配三种情况：本目录下的 node、带 --wmsorter 标记的 node（系统 node 启动）、本目录下的 RapidOCR 引擎
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$root = (Get-Location).Path; $list = @(Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and ($_.CommandLine -like '*--wmsorter*' -or $_.CommandLine -like ('*' + $root + '*'))) -or ($_.Name -eq 'RapidOCR-json.exe' -and ($_.ExecutablePath -like ($root + '*') -or $_.CommandLine -like ('*' + $root + '*'))) }); if ($list.Count -eq 0) { Write-Host '[OK] 没有发现运行中的实例' } else { foreach ($p in $list) { Write-Host ('[STOP] ' + $p.Name + '  PID=' + $p.ProcessId); Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } }"
 
 if /i not "%~1"=="quiet" (
   echo.
