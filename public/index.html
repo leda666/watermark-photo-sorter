@@ -881,9 +881,24 @@ async function scanHandle() {
 }
 
 async function prepItems() {
+  // v1.2.2：去重（同一文件被根目录与子目录重复扫描时只处理一次），并容错读取句柄
+  const seen = new Set();
+  const uniq = [];
   for (const it of handleItems) {
-    it.file = await it.handle.getFile();
-    it.url = URL.createObjectURL(it.file);
+    const key = (it.srcSub || '') + '|' + it.name;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniq.push(it);
+  }
+  handleItems = uniq;
+  for (const it of handleItems) {
+    try {
+      it.file = await it.handle.getFile();
+      it.url = URL.createObjectURL(it.file);
+    } catch (e) {
+      it.file = null;      // 句柄已失效（文件被移动/删除），处理时给明确提示
+      it.url = '';
+    }
   }
 }
 
@@ -963,6 +978,11 @@ async function startProcess() {
       updateProgressUI(it.name);
       setCard(i, 'processing');
       try {
+        // v1.2.2：用前刷新文件句柄，避免磁盘上文件已变导致 InvalidStateError
+        if (!it.file) {
+          try { it.file = await it.handle.getFile(); }
+          catch (e) { throw new Error('文件已被移动或重命名（句柄失效）：' + it.name + '，请重新选择文件夹后再试'); }
+        }
         if (it.kind === 'learn' && it.expected) {
           const buf = await it.file.arrayBuffer();
           const r = await fetch(`/api/learn-upload?expected=${encodeURIComponent(dateStr(it.expected))}&w=0&h=0&name=${encodeURIComponent(it.name)}`, {
@@ -1039,6 +1059,13 @@ function bumpName(name, i) {
   return `${base}(${i})${ext}`;
 }
 async function moveToDir(it, folderName) {
+  // v1.2.2：移动前重新从句柄取文件——缓存的 File 若与磁盘状态不一致会抛 InvalidStateError
+  let blob = null;
+  try { blob = await it.handle.getFile(); } catch (e) { blob = null; }
+  if (!blob) {
+    try { blob = it.file; } catch (e) { blob = null; }
+  }
+  if (!blob) throw new Error('文件已被移动或重命名（句柄失效），已跳过：' + it.name);
   const dir = await dirHandle.getDirectoryHandle(folderName, { create: true });
   let n = it.name, i = 1;
   while (true) {
@@ -1047,7 +1074,12 @@ async function moveToDir(it, folderName) {
   }
   const fh = await dir.getFileHandle(n, { create: true });
   const w = await fh.createWritable();
-  await w.write(it.file);
+  try {
+    await w.write(blob);
+  } catch (e) {
+    await w.abort().catch(() => {});
+    throw new Error('写入目标文件夹失败（文件状态已变化）：' + it.name + '，请刷新列表后重试');
+  }
   await w.close();
   const src = it.srcSub ? await dirHandle.getDirectoryHandle(it.srcSub.split('/')[0]) : dirHandle;
   await src.removeEntry(it.name);
@@ -1849,13 +1881,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = 
 程序数据（工具目录内，请勿删除）
 ├── learnings.json        ← 学习库：按分辨率记住框选区域 / 参数
 ├── engine/               ← PaddleOCR 系识别引擎（勿删，删了会退回旧引擎）
-├── logs/日期.log            ← 工作日志按日期存档
+├── logs/2026-11-18.log  ← 工作日志按日期存档
 └── tessdata/             ← 兜底引擎模型</pre>
     <h4>联系与更多</h4>
     <div class="contact">
-      <p style="margin:0">💬 QQ：198999397　　📰 微信公众号：Tendered<br>🌐 资源站：轻Q魔客 <a href="https://www.qqmo.cn" target="_blank" style="color:#2b5db8">www.qqmo.cn</a><br>🐛 问题反馈 / 功能建议：欢迎提 Issue 或 Pull Request</p>
+      <p style="margin:0">💬 QQ：198999397　　📰 微信公众号：Tendered<br>🌐 资源站：轻Q魔客 <a href="https://www.qqmo.cn" target="_blank" style="color:#2b5db8">www.qqmo.cn</a></p>
     </div>
-    <div class="foot">© 2026 哒哒 · MIT License 开源 · 引擎：RapidOCR-json（MIT，内置 PaddleOCR PP-OCRv4 模型 Apache-2.0）· 兜底：Tesseract.js v6 · 图像处理：jimp v1</div>
+    <div class="foot">© 2026 哒哒 · 本地离线工具，仅供个人使用 · 引擎：RapidOCR-json（PaddleOCR PP-OCRv4，Apache-2.0）· 兜底：Tesseract.js v6 · 图像处理：jimp v1</div>
   </div>
 </div>
 </body>
