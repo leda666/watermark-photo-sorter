@@ -1,3 +1,4 @@
-' Stop OCR Watermark Sorter by killing the process listening on port 3872
+' Stop all processes of this program (node.exe + RapidOCR-json.exe) silently
 Set ws = CreateObject("WScript.Shell")
-ws.Run "powershell -NoProfile -Command ""Get-NetTCPConnection -LocalPort 3872 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }""", 0, True
+ws.CurrentDirectory = Replace(WScript.ScriptFullName, "stop.vbs", "")
+ws.Run "cmd /c stop.bat quiet", 0, True

@@ -779,3 +779,15 @@ app.listen(PORT, () => {
   log(`识别引擎：${rec.engineLabel()} | 学习库：${learn.LEARN_FILE}（当前 ${learn.list().length} 条存档）`);
   ensureEngine().catch(e => log('OCR 引擎初始化失败：' + e.message));
 });
+
+// 退出时释放 worker 子进程，避免残留占用程序目录文件
+let closing = false;
+async function gracefulExit(code) {
+  if (closing) return;
+  closing = true;
+  try { await rec.shutdown(); } catch (e) { /* 忽略 */ }
+  process.exit(code == null ? 0 : code);
+}
+['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'].forEach(sig => {
+  try { process.on(sig, () => gracefulExit(0)); } catch (e) { /* 平台不支持则跳过 */ }
+});

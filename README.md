@@ -53,7 +53,7 @@ npm run setup      # 下载并解压 OCR 引擎（约 70MB，可跳过，见下�
 npm start          # 启动，浏览器打开 http://localhost:3872
 ```
 
-Windows 用户也可直接双击 `start.bat` 启动、`stop.vbs` 停止。
+Windows 用户也可直接双击 `start.bat` 启动、`stop.bat` 停止。**删除或移动程序目录前，请先双击 `stop.bat`**——否则后台的 node 进程与 OCR 引擎进程会占用文件，导致无法删除。
 
 **不装主引擎也能用**：跳过 `npm run setup` 时会自动使用 Tesseract.js 兜底引擎（慢一些、准确率低一些）。
 手动安装引擎的方式见 [`engine/README.md`](engine/README.md)。
