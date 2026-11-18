@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>水印照片智能分类 v1.2.1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 15px;
+    color: #2b2b2b;
+    background: #f5f6f7;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 60px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h1 .ver { font-size: 13px; color: #4a7de0; font-weight: 500; margin-left: 8px; }
+  h1 .ver[onclick] { cursor: pointer; }
+  h1 .ver[onclick]:hover { text-decoration: underline; }
+
+  /* v1.0.10：关于弹窗 */
+  #aboutMask { position: fixed; inset: 0; background: rgba(30,35,45,.45); z-index: 2000; }
+  #aboutCard {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: min(600px, 92vw); max-height: 84vh; overflow-y: auto;
+    background: #fff; border-radius: 12px; padding: 26px 30px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18);
+  }
+  #aboutCard h3 { font-size: 17px; margin: 0 0 2px; }
+  #aboutCard .ver-badge {
+    display: inline-block; margin: 6px 0 14px; padding: 2px 10px;
+    background: #eef3fc; border: 1px solid #b9c8e8; border-radius: 20px;
+    font-size: 12.5px; color: #2b5db8;
+  }
+  #aboutCard h4 { font-size: 13.5px; color: #2b5db8; margin: 16px 0 6px; padding-left: 8px; border-left: 3px solid #4a7de0; }
+  #aboutCard p, #aboutCard li { font-size: 13px; color: #444; line-height: 1.9; }
+  #aboutCard ul { padding-left: 20px; margin: 0; }
+  #aboutCard .foot { margin-top: 18px; padding-top: 12px; border-top: 1px dashed #e5e7eb; font-size: 12px; color: #999; }
+  #aboutClose { position: absolute; top: 14px; right: 16px; }
+  #aboutCard pre {
+    background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 12px 14px; margin: 6px 0;
+    font-family: Consolas, monospace; font-size: 12px; line-height: 1.8;
+    color: #333; overflow-x: auto;
+  }
+  #aboutCard pre b { color: #2b5db8; font-weight: 600; }
+  #aboutCard .contact { background: #eef3fc; border: 1px solid #b9c8e8; border-radius: 8px; padding: 10px 14px; margin-top: 6px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+  section { margin-bottom: 32px; }
+  h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; padding-left: 10px; border-left: 3px solid #4a7de0; }
+  .hint { color: #999; font-size: 12.5px; margin-top: 6px; }
+  .hint.warn { color: #b23b3b; }
+  .hint.ok { color: #1e7f3c; }
+
+  /* v1.0.10：收缩展开块（参数配置 / 日志） */
+  details > summary {
+    cursor: pointer; user-select: none;
+    font-weight: 600; color: #2b2b2b;
+    display: flex; align-items: center; justify-content: center;
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before {
+    content: '▸'; color: #4a7de0; font-size: 13px; margin-right: 6px;
+    transition: transform .15s;
+  }
+  details[open] > summary::before { content: '▾'; }
+  details > summary:hover { color: #4a7de0; }
+
+  #dropzone {
+    border: 2px dashed #b9c8e8; border-radius: 10px; background: #fff;
+    padding: 34px 20px; text-align: center; cursor: pointer; transition: all .15s;
+  }
+  #dropzone:hover, #dropzone.over { border-color: #4a7de0; background: #eef3fc; }
+  #dropzone .big { font-size: 16px; color: #4a7de0; margin-bottom: 4px; }
+  #dropzone .small { font-size: 12.5px; color: #999; }
+
+  input[type=text], select {
+    padding: 8px 12px; font-size: 14px;
+    border: 1px solid #d4d7dc; border-radius: 6px; outline: none;
+    font-family: Consolas, monospace; background: #fff;
+  }
+  input[type=text]:focus, select:focus { border-color: #4a7de0; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+
+  .btns { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  #procBtns { justify-content: center; }
+  button {
+    padding: 9px 20px; font-size: 14px; border: none; border-radius: 6px;
+    background: #4a7de0; color: #fff; cursor: pointer;
+  }
+  button:hover { background: #3d6cc9; }
+  button:disabled { background: #b8c4da; cursor: not-allowed; }
+  button.ghost { background: #fff; color: #4a7de0; border: 1px solid #b9c8e8; }
+  button.ghost:hover { background: #eef3fc; }
+  button.warn { background: #e88; }
+  button.warn:hover { background: #d66; }
+  button.mini { padding: 5px 12px; font-size: 12.5px; }
+  button.link { background: none; color: #4a7de0; padding: 1px 4px; font-size: 12px; text-decoration: underline; }
+
+  details { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+  summary { padding: 10px 16px; cursor: pointer; font-size: 14px; font-weight: 600; }
+  details .inner { padding: 6px 16px 16px; }
+
+  .stats { display: flex; gap: 28px; flex-wrap: wrap; padding: 14px 18px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+  .stats b { font-size: 20px; margin-right: 4px; }
+  .stats .item span { color: #777; font-size: 13px; }
+
+  .progress-wrap { margin-top: 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 18px; }
+  .progress-top { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 6px; }
+  .progress-bar { height: 10px; background: #eef0f2; border-radius: 5px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; background: #4a7de0; border-radius: 5px; transition: width .3s; }
+  .progress-bar .fill.paused { background: #e8a13d; }
+  #curFile { color: #999; font-size: 12px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 14px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; cursor: zoom-in; position: relative; }
+  .card:hover { border-color: #4a7de0; }
+  .card.selected { border-color: #e88; box-shadow: 0 0 0 2px #f3c1c1; }
+  .card .thumb { width: 100%; height: 100px; object-fit: cover; display: block; background: #eef0f2; }
+  .card .meta { padding: 6px 8px; font-size: 12px; }
+  .card .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #555; }
+  .card .meta .row2 { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  .card .chk { position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; display: none; }
+  body.multiselect .card .chk { display: block; }
+  .badge { display: inline-block; margin-top: 3px; padding: 1px 8px; border-radius: 10px; font-size: 12px; }
+  .badge.detected { background: #e3ecff; color: #2b5db8; }
+  .badge.processing { background: #fff4dc; color: #a8720a; }
+  .badge.sorted { background: #e3f5e8; color: #1e7f3c; }
+  .badge.unknown { background: #eceff3; color: #6b7280; }
+  .badge.failed { background: #fde8e8; color: #b23b3b; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  #logTabs { margin-bottom: 10px; }
+  .tabs button { padding: 5px 14px; font-size: 13px; border-radius: 14px; background: #fff; color: #555; border: 1px solid #d4d7dc; }
+  .tabs button:hover { border-color: #4a7de0; color: #4a7de0; background: #eef3fc; }
+  .tabs button.active { background: #4a7de0; color: #fff; border-color: #4a7de0; }
+  .badge.learned { background: #ede3ff; color: #6b3bb8; }
+
+  .explorer { display: flex; gap: 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; min-height: 220px; }
+  .folders { width: 240px; border-right: 1px solid #eef0f2; padding: 10px; overflow-y: auto; max-height: 380px; }
+  .folder {
+    padding: 7px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between;
+    font-size: 13.5px; margin-bottom: 2px;
+  }
+  .folder:hover { background: #eef3fc; }
+  .folder.active { background: #4a7de0; color: #fff; }
+  .folder .cnt { color: #999; font-size: 12px; }
+  .folder.active .cnt { color: #dbe6ff; }
+  .files { flex: 1; padding: 10px; overflow-y: auto; max-height: 380px; }
+  .filegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .fitem { background: #f7f8fa; border-radius: 6px; overflow: hidden; cursor: pointer; border: 1px solid #eef0f2; }
+  .fitem:hover { border-color: #4a7de0; }
+  .fitem img { width: 100%; height: 80px; object-fit: cover; display: block; }
+  .fitem .fn { padding: 4px 6px; font-size: 11.5px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { color: #aaa; font-size: 13px; text-align: center; padding: 40px 0; }
+
+  .logbox { height: 300px; overflow-y: auto; padding: 10px 16px; font-family: Consolas, monospace; font-size: 12.5px; color: #555; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+  .logbox div { padding: 1px 0; border-bottom: 1px dashed #f0f1f3; }
+
+  /* ---------- 灯箱 ---------- */
+  #lightbox {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(30, 34, 40, .75); padding: 24px;
+  }
+  #lightbox.show { display: flex; }
+  .lb-body {
+    margin: auto; background: #fff; border-radius: 10px; max-width: 1100px; width: 100%;
+    max-height: calc(100vh - 48px); overflow: hidden; display: flex; flex-direction: column;
+  }
+  .lb-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid #eef0f2; }
+  .lb-head .t { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 16px; }
+  .lb-close { background: #f0f1f3; color: #555; border-radius: 50%; width: 30px; height: 30px; padding: 0; line-height: 1; }
+  .lb-main { display: flex; gap: 0; overflow: hidden; flex: 1; min-height: 0; }
+  .lb-img-wrap { flex: 1.2; background: #2b2f36; display: flex; align-items: center; justify-content: center; min-width: 0; position: relative; overflow: hidden; }
+  .lb-img-wrap img { max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain; user-select: none; }
+  #regionBox { position: absolute; border: 2px dashed #ffd24d; background: rgba(255, 210, 77, .15); display: none; pointer-events: none; }
+  .lb-panel { flex: 1; max-width: 460px; overflow-y: auto; padding: 16px 18px; border-left: 1px solid #eef0f2; }
+  .lb-panel h3 { font-size: 14px; margin: 14px 0 8px; padding-left: 8px; border-left: 3px solid #4a7de0; }
+  .lb-panel h3:first-child { margin-top: 0; }
+  .cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .cfg-grid label { font-size: 12.5px; color: #666; display: block; }
+  .cfg-grid select, .cfg-grid input[type=text] { width: 100%; font-size: 13px; padding: 5px 8px; }
+  .cfg-grid input[type=range] { width: 100%; }
+  .ocr-out {
+    background: #f7f8fa; border: 1px solid #eef0f2; border-radius: 6px; padding: 8px 10px;
+    font-family: Consolas, monospace; font-size: 12px; color: #444; max-height: 120px; overflow-y: auto;
+    white-space: pre-wrap; word-break: break-all; min-height: 34px;
+  }
+  .ocr-date { margin-top: 8px; font-size: 14px; font-weight: 600; }
+  .learn-bar { margin-top: 10px; padding: 8px 14px; background: #eef3fc; border: 1px solid #b9c8e8; border-radius: 8px; font-size: 12.5px; color: #2b5db8; }
+  .learn-detail { margin-top: 6px; background: #fff; border: 1px solid #b9c8e8; border-radius: 6px; padding: 6px 10px; font-family: Consolas, monospace; font-size: 11.5px; color: #444; max-height: 180px; overflow-y: auto; }
+  .learn-detail div { padding: 2px 0; border-bottom: 1px dashed #eef0f2; }
+  .learn-detail .del { color: #b23b3b; cursor: pointer; text-decoration: underline; margin-left: 8px; }
+  .lb-log { margin-top: 8px; background: #f7f8fa; border: 1px solid #eef0f2; border-radius: 6px; padding: 6px 8px; font-family: Consolas, monospace; font-size: 11.5px; color: #555; max-height: 110px; overflow-y: auto; }
+  .lb-log div { padding: 0 0 2px; border-bottom: 1px dashed #f0f1f3; }
+  .lb-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .lb-row input[type=text] { flex: 1; min-width: 140px; }
+  .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #b9c8e8; border-top-color: #4a7de0; border-radius: 50%; animation: r 0.8s linear infinite; vertical-align: -2px; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  #regionHint { font-size: 12px; color: #a8720a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>水印照片智能分类<span class="ver" onclick="showAbout()" title="点击查看程序介绍 / 教程 / 版权">v1.2.1 · 带学习</span></h1>
+  <div class="sub">识别照片时间水印并按 <b>年.月.日</b> 归档 · 点击照片查看大图 / 实时调参 / 框选识别区域 / 纠错学习 · localhost:3872</div>
+
+  <section>
+    <h2>1. 选择照片目录（拖拽或点击）</h2>
+    <div id="dropzone">
+      <div class="big">把照片文件夹拖到这里</div>
+      <div class="small">或点击本区域选择文件夹 · 日期文件夹和「未识别」将创建在照片目录内</div>
+    </div>
+    <div class="hint" id="pickHint">支持任意位置水印（角落/边缘），白色或黑色文字均可识别；识别错的纠错后程序会记住该尺寸照片的参数，越用越准。</div>
+
+    <div class="field" style="margin-top:12px; max-width:560px">
+      <label>日期约束（可选 · 只有列出的日期/范围内的日期才算命中，修不进的进「未识别」；几百张照片实际只有几个日期时强烈建议设置）</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input type="text" id="dateAllow" placeholder="2026.4.15，2026.4.16，2026.4.17 或 2026.4.15~2026.4.18" style="flex:1">
+        <button class="mini" onclick="confirmRange()">确认约束</button>
+        <button class="mini ghost" onclick="clearRange()">清除</button>
+      </div>
+      <div class="hint">多个日期用逗号/顿号/空格隔开；两个日期之间用 ~ 或 至 连接表示连续范围。</div>
+    </div>
+
+    <datalist id="dateOptions"></datalist>
+
+
+      </section>
+
+  <section id="statSec">
+    <h2>2. 识别与归档</h2>
+    <div class="stats">
+      <div class="item"><b id="stDone">0</b><span>/ <span id="stTotal">0</span> 已处理</span></div>
+      <div class="item"><b id="stSorted" style="color:#1e7f3c">0</b><span>已归类</span></div>
+      <div class="item"><b id="stUnknown" style="color:#6b7280">0</b><span>未识别</span></div>
+      <div class="item"><b id="stFailed" style="color:#b23b3b">0</b><span>失败</span></div>
+    </div>
+    <details class="cfg-collapse" style="margin-top:14px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px">
+      <summary>
+        <span style="font-size:14px;font-weight:600">⚙ 参数配置（PaddleOCR 引擎 · 通常无需调整）</span>
+      </summary>
+      <div style="padding-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:13px;color:#666">一般保持默认即可，只在对某批照片识别不佳时才手动调整。</span>
+        <label style="font-size:12.5px;color:#666;display:flex;align-items:center;gap:6px"><input type="checkbox" id="gSmart" checked> 智能自适应（高度/缩放/分割按图片自动，取消勾选手动调）</label>
+      </div>
+      <div class="cfg-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div><label>扫描区域</label>
+          <select id="gRegion">
+            <option value="auto">自动（智能选区域）</option>
+            <option value="lb">左下角（推荐，快）</option>
+            <option value="rb">右下角（快）</option>
+            <option value="lt">左上角（快）</option>
+            <option value="rt">右上角（快）</option>
+            <option value="bottom">整条下部</option>
+            <option value="top">整条顶部</option>
+            <option value="full">仅全图</option>
+          </select>
+        </div>
+        <div><label>探测模式（区域=自动时）</label>
+          <select id="gRegionMode">
+            <option value="cascade">级联升级（推荐，快）</option>
+            <option value="probe">每张先探测（准）</option>
+          </select>
+        </div>
+        <div><label>反色（白字水印）</label>
+          <select id="gInvert">
+            <option value="auto">自动（两种都试）</option>
+            <option value="on">反色（白字）</option>
+            <option value="off">不反色（黑字）</option>
+          </select>
+        </div>
+        <div><label>分割模式（自动）</label>
+          <select id="gPsm">
+            <option value="6">6 单一块</option>
+            <option value="11">11 稀疏</option>
+            <option value="3">3 自动</option>
+            <option value="7">7 单行</option>
+          </select>
+        </div>
+        <div><label>区域高度 <span id="gCropV">自动</span></label>
+          <input type="range" id="gCrop" min="10" max="90" step="5" value="45">
+        </div>
+        <div><label>缩放宽度（自动）</label>
+          <select id="gMaxW">
+            <option value="800">800（快）</option>
+            <option value="1000">1000</option>
+            <option value="1200">1200（默认）</option>
+            <option value="1600">1600</option>
+            <option value="2000">2000（慢/精）</option>
+          </select>
+        </div>
+        <div><label>阈值模式 <span id="gThV">自适应</span></label>
+          <select id="gThMode">
+            <option value="-1">自适应（Otsu）</option>
+            <option value="0">关闭</option>
+            <option value="manual">手动设定</option>
+          </select>
+        </div>
+        <div><label>手动阈值</label>
+          <input type="range" id="gTh" min="10" max="245" step="5" value="210" disabled>
+        </div>
+      </div>
+      <!-- v1.2.1：识别并行线程（自适应 / 自定义） -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #e5e7eb">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:13px;color:#666">识别并行线程</span>
+          <select id="gThreadMode" style="width:auto" onchange="onThreadModeChange()">
+            <option value="auto">自适应（按电脑配置，推荐）</option>
+            <option value="custom">自定义</option>
+          </select>
+          <input type="number" id="gThreadVal" min="1" max="16" step="1" value="4"
+                 style="width:70px" disabled onchange="applyThreads()">
+          <span style="font-size:12.5px;color:#999">路</span>
+          <button class="mini ghost" onclick="fetchSysInfo()">获取电脑配置</button>
+          <span class="hint" id="sysInfo" style="margin-top:0">点「获取电脑配置」查看本机核数与建议线程</span>
+        </div>
+      </div>
+      <div class="lb-row">
+        <label style="font-size:13px;color:#666"><input type="checkbox" id="gWl" checked> 只认日期字符（白名单）</label>
+        <button class="mini" onclick="applyGlobalCfg()">应用参数（保存）</button>
+        <button class="mini ghost" onclick="quickFast()">一键快速模式（左下角）</button>
+        <button class="mini ghost" onclick="resetGlobalCfg()">恢复默认</button>
+      </div>
+      <div class="hint" id="gCfgHint">v1.2.1 已换 PaddleOCR 系引擎：默认全图识别，一般无需任何参数。以下选项仅在引擎文件缺失、自动切回 Tesseract 兜底时生效。</div>
+      </div>
+    </details>
+    <div class="progress-wrap" id="progWrap">
+      <div class="progress-top">
+        <span id="progText">0%</span>
+        <span id="progStatus"></span>
+      </div>
+      <div class="progress-bar"><div class="fill" id="progFill" style="width:0%"></div></div>
+      <div id="curFile"></div>
+    <div class="btns" id="procBtns">
+      <button id="btnStart" onclick="startProcess()">开始识别</button>
+      <button class="ghost" id="btnPause" onclick="togglePause()" disabled>⏸ 暂停</button>
+      <button class="warn" id="btnStop" onclick="stopJob()" disabled>⏹ 停止</button>
+      <button class="ghost" id="btnClear" onclick="clearJob()">清空进度</button>
+    </div>
+    <div class="tabs" id="groupTabs"></div>
+    <div class="cards" id="cards" onclick="cardClick(event)"></div>
+  </section>
+
+
+  <section>
+    <h2>工作日志</h2>
+    <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px;flex-wrap:wrap">
+      <select id="logDateSel" onchange="onLogDateChange()" style="font-family:inherit;max-width:220px">
+        <option value="__live__">实时日志</option>
+      </select>
+      <button class="mini ghost" onclick="clearPageLogs()">清空当前页面日志</button>
+      <button class="mini ghost" id="btnLogDel" onclick="deleteLogArchive()" disabled>删除该日期存档</button>
+      <span class="hint" style="margin-top:0">日志已按日期自动存档到程序目录 logs/ 下，可回看历史</span>
+    </div>
+    <div class="tabs" id="logTabs"></div>
+    <div class="logbox" id="logbox"></div>
+    <div class="learn-bar" id="learnBar">📚 学习数据加载中…</div>
+  </section>
+</div>
+
+<!-- 灯箱：大图 + 调参 + 框选 + 纠错 -->
+<div id="lightbox" onclick="lbBackdrop(event)">
+  <div class="lb-body" onclick="event.stopPropagation()">
+    <div class="lb-head">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <button class="lb-close" style="width:auto;border-radius:6px;padding:0 10px" title="上一张（←）" onclick="navLb(-1)">‹</button>
+        <div class="t" id="lbTitle">—</div>
+        <button class="lb-close" style="width:auto;border-radius:6px;padding:0 10px" title="下一张（→）" onclick="navLb(1)">›</button>
+      </div>
+      <button class="lb-close" onclick="closeLb()">✕</button>
+    </div>
+    <div class="lb-main">
+      <div class="lb-img-wrap" id="lbImgWrap">
+        <img id="lbImg" src="" alt="">
+        <div id="regionBox"></div>
+      </div>
+      <div class="lb-panel">
+        <h3>实时调参（OCR 预览）</h3>
+        <div class="cfg-grid">
+          <div><label>扫描区域</label>
+            <select id="cfgRegion">
+              <option value="auto">自动（全图+边缘）</option>
+              <option value="lb">左下角（快）</option>
+              <option value="rb">右下角（快）</option>
+              <option value="lt">左上角（快）</option>
+              <option value="rt">右上角（快）</option>
+              <option value="full">仅全图</option>
+              <option value="bottom">仅下部</option>
+              <option value="top">仅顶部</option>
+            </select>
+          </div>
+          <div><label>反色（白字水印）</label>
+            <select id="cfgInvert">
+              <option value="auto">自动（两种都试）</option>
+              <option value="on">反色（白字）</option>
+              <option value="off">不反色（黑字）</option>
+            </select>
+          </div>
+          <div><label>裁剪比例 <span id="cfgCropV">45%</span></label>
+            <input type="range" id="cfgCrop" min="10" max="90" step="5" value="45">
+          </div>
+          <div><label>缩放宽度</label>
+            <select id="cfgMaxW">
+              <option value="800">800（快）</option>
+              <option value="1000">1000</option>
+              <option value="1200" selected>1200（默认）</option>
+              <option value="1600">1600</option>
+              <option value="2000">2000（慢/精）</option>
+            </select>
+          </div>
+          <div><label>阈值模式 <span id="cfgThV">自适应</span></label>
+            <select id="cfgThMode">
+              <option value="-1">自适应（Otsu）</option>
+              <option value="0">关闭</option>
+              <option value="manual">手动设定</option>
+            </select>
+          </div>
+          <div><label>手动阈值</label>
+            <input type="range" id="cfgTh" min="10" max="245" step="5" value="210" disabled>
+          </div>
+          <div><label>分割模式</label>
+            <select id="cfgPsm">
+              <option value="11">11 稀疏（默认）</option>
+              <option value="6">6 单一块</option>
+              <option value="3">3 自动</option>
+              <option value="7">7 单行</option>
+              <option value="12">12 稀疏+OSD</option>
+            </select>
+          </div>
+        </div>
+        <div class="lb-row">
+          <label style="font-size:13px;color:#666"><input type="checkbox" id="cfgWl" checked> 只认日期字符（白名单）</label>
+        </div>
+        <div class="lb-row">
+          <button class="mini" id="btnPreview" onclick="previewOcr(true)">识别预览</button>
+        </div>
+        <div class="ocr-out" id="ocrOut">点击「识别预览」或修改参数实时查看 OCR 识别原文</div>
+        <div class="ocr-date" id="ocrDate"></div>
+        <div class="lb-log" id="lbLog"></div>
+
+        <h3>手动框选识别区域</h3>
+        <div class="hint" style="margin:0 0 6px">直接在左侧大图上拖拽画框，只识别框内内容。<span id="regionHint">未框选</span></div>
+        <div class="lb-row">
+          <button class="mini" onclick="previewRegion()">识别此区域</button>
+          <button class="mini ghost" onclick="saveRegionLearn()">框选学习保存</button>
+          <button class="mini ghost" onclick="clearRegion()">清除框选</button>
+        </div>
+
+        <h3>纠错学习（三步走）</h3>
+        <div class="hint" style="margin:0 0 6px">
+          <b>① 调参数</b>（上方面板或框选）→ <b>② 点「试提取」</b>确认能读出正确日期（自动选中到下拉）→ <b>③ 点蓝色「学习并归档本张」</b>：参数记住、照片归位。调不出再用「自动搜索」兜底。
+        </div>
+        <div class="lb-row">
+          <button class="mini" id="btnProbe" onclick="probeDate()">② 试提取（按日期约束）</button>
+          <select id="lbCorrectSel" style="flex:1" title="正确日期（试提取成功会自动选中）"><option value="">选择正确日期（来自日期约束）…</option></select>
+          <span class="hint" id="probeHint" style="margin:0"></span>
+        </div>
+        <div class="lb-row">
+          <button class="mini" id="btnApplyLearn" onclick="applyLearnNow()" style="padding:8px 16px">③ 学习这些参数并归档本张</button>
+          <button class="mini ghost" id="btnLearn" onclick="learnFromLb()" title="当前参数读不出日期时的兜底：程序自动逐组尝试能读出正确日期的参数并记住（约1分钟）">参数调不好？自动搜索（教它）</button>
+        </div>
+        <div class="lb-row">
+          <button class="mini ghost" id="btnDiscard" onclick="discardPhoto(lbIndex)">识别出错（快捷丢进未识别）</button>
+          <button class="mini ghost" id="btnRerunOne" onclick="rerunOne()" title="只重新识别归档，不保存学习参数">仅重新识别本张（不学习）</button>
+        </div>
+
+        <h3>手动改归类</h3>
+        <div class="lb-row">
+          <input type="text" id="lbTarget" placeholder="2025.10.7">
+          <button class="mini ghost" onclick="manualMove()">移动</button>
+        </div>
+        <div class="hint" id="lbMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const IMAGE_EXT_RE = /\.(jpe?g|png|bmp|webp|tiff?)$/i;
+let dirHandle = null;
+let handleItems = [];       // { name, handle, file, url, kind:'learn'|'normal', expected, srcSub, folderName, moved }
+let stats = { total: 0, done: 0, sorted: 0, unknown: 0, failed: 0 };
+let processing = false;
+let CONCURRENCY = 2; // OCR 并行度（v1.0.9：从 /api/logs 读取服务端 worker 数，2~4 自适应）
+let paused = false;
+let stoppedFlag = false;
+let learnMode = false;      // 拖入目录名 = 未识别 时为 true（整目录学习）
+let canFeed = false;        // 喂养学习按钮是否可用
+let jobType = null;
+let lbIndex = -1;
+let previewTimer = null;
+let firstError = '';
+let cardErrors = {};
+let customRegion = null;
+
+// ---------- 基础工具 ----------
+function esc(x) { const d = document.createElement('div'); d.textContent = x; return d.innerHTML; }
+function lbLogAdd(msg) {
+  const box = $('lbLog');
+  if (!box) return;
+  const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  const d = document.createElement('div');
+  d.textContent = '[' + t + '] ' + msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollTop + 99999;
+}
+function setHint(msg, cls) { const el = $('pickHint'); el.textContent = msg; el.className = 'hint' + (cls ? ' ' + cls : ''); }
+function lbMsg(m, warn) { const el = $('lbMsg'); el.textContent = m; el.className = 'hint' + (warn ? ' warn' : ' ok'); }
+function dateStr(d) { return d ? `${d.y}.${d.mo}.${d.d}` : ''; }
+function parseDateInput(x) {
+  const m = String(x || '').trim().match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if (y < 2000 || y > 2038 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return { y, mo, d };
+}
+
+let allLogs = [], allCats = [], currentLogCat = '__all__';
+const LOG_CATS = [['__all__', '全部'], ['recognize', '识别'], ['learn', '学习'], ['fail', '失败'], ['system', '系统']];
+// v1.0.10：日志查看模式（实时 / 日期存档）+ 智能滚动跟随
+let logView = '__live__';      // '__live__' 或 'YYYY-MM-DD.log'
+let archiveLines = [];         // 存档模式的内容
+let logFollow = true;          // 实时模式：用户停在底部时才自动滚到最新
+$('logbox').addEventListener('scroll', function () {
+  if (logView !== '__live__') return;
+  const lb = $('logbox');
+  logFollow = lb.scrollTop + lb.clientHeight >= lb.scrollHeight - 30;
+});
+async function refreshLogs() {
+  try {
+    // 存档查看模式下不覆盖页面内容
+    if (logView !== '__live__') return;
+    const r = await fetch('/api/logs'); const j = await r.json();
+    allLogs = j.logs || [];
+    allCats = j.cats || allLogs.map(() => 'system');
+    if (j.workerCount) CONCURRENCY = Math.max(1, Math.min(16, j.workerCount));
+    if (j.threads) syncThreadPanel(j.threads);
+    renderLog();
+    renderLogTabs();
+    refreshLearnBar();
+  } catch (e) {}
+}
+async function refreshLogFiles() {
+  try {
+    const r = await fetch('/api/log-files'); const j = await r.json();
+    if (!j.ok) return;
+    const sel = $('logDateSel');
+    const cur = sel.value || '__live__';
+    const today = j.files && j.files[0] && j.files[0].name;
+    sel.innerHTML = '<option value="__live__">实时日志</option>' + (j.files || []).map(f =>
+      '<option value="' + f.name + '">' + f.name.replace('.log', '') + ' 存档</option>').join('');
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : '__live__';
+    logView = sel.value;
+    $('btnLogDel').disabled = logView === '__live__';
+    if (logView !== '__live__') loadArchive();
+  } catch (e) {}
+}
+async function loadArchive() {
+  try {
+    const r = await fetch('/api/log-file?name=' + encodeURIComponent(logView)); const j = await r.json();
+    if (!j.ok) { $('logbox').innerHTML = '<div>（存档读取失败：' + esc(j.error || '') + '）</div>'; return; }
+    archiveLines = String(j.content || '').split('\n').filter(x => x.trim());
+    $('logTabs').style.display = 'none';
+    const shown = archiveLines.slice(-5000);
+    $('logbox').innerHTML = (archiveLines.length > 5000 ? '<div>（存档较长，仅显示最近 5000 行，完整内容见 logs/ 目录文件）</div>' : '') +
+      shown.map(l => '<div>' + esc(l) + '</div>').join('') || '<div>（空日志）</div>';
+    $('logbox').scrollTop = 999999;
+  } catch (e) {}
+}
+function onLogDateChange() {
+  logView = $('logDateSel').value;
+  $('btnLogDel').disabled = logView === '__live__';
+  if (logView === '__live__') {
+    logFollow = true;
+    $('logTabs').style.display = '';
+    renderLog(); renderLogTabs();
+  } else {
+    loadArchive();
+  }
+}
+async function clearPageLogs() {
+  try { await fetch('/api/logs/clear', { method: 'POST' }); } catch (e) {}
+  allLogs = []; allCats = [];
+  logFollow = true;
+  renderLog(); renderLogTabs();
+}
+async function deleteLogArchive() {
+  if (logView === '__live__') return;
+  if (!confirm('确定删除日志存档 ' + logView + ' ？删除后无法恢复')) return;
+  try { await fetch('/api/log-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: logView }) }); } catch (e) {}
+  await refreshLogFiles();
+  if (logView === '__live__') { renderLog(); renderLogTabs(); }
+}
+function renderLogTabs() {
+  if (logView !== '__live__') return;
+  const counts = {};
+  for (const c of allCats) counts[c] = (counts[c] || 0) + 1;
+  $('logTabs').innerHTML = LOG_CATS.map(function (p) {
+    const n = p[0] === '__all__' ? allCats.length : (counts[p[0]] || 0);
+    return '<button class="' + (p[0] === currentLogCat ? 'active' : '') + '" onclick="filterLog(\'' + p[0] + '\')">' + p[1] + ' (' + n + ')</button>';
+  }).join('');
+}
+function filterLog(k) { currentLogCat = k; renderLog(); renderLogTabs(); }
+function renderLog() {
+  if (logView !== '__live__') return;
+  const rows = [];
+  for (let i = 0; i < allLogs.length; i++) {
+    if (currentLogCat !== '__all__' && allCats[i] !== currentLogCat) continue;
+    rows.push('<div>' + esc(allLogs[i]) + '</div>');
+  }
+  $('logbox').innerHTML = rows.join('') || '<div>（该分类暂无日志）</div>';
+  // v1.0.10：只有用户本来就停在底部（未上翻）时才跟随到最新一行
+  if (logFollow) $('logbox').scrollTop = 999999;
+}
+async function refreshLearnBar() {
+  try {
+    const r = await fetch('/api/learnings'); const j = await r.json();
+    if (!j.ok) return;
+    learnEntriesCache = j.entries || [];
+    const st = j.stats || {};
+    const src = st.src || {};
+    $('learnBar').innerHTML = '📚 累计学习：' + (st.total || 0) + ' 条参数记忆（自动识别 ' + (src.auto || 0) + ' · 喂养 ' + (src.feed || 0) + ' · 纠错 ' + ((src.correction || 0) + (src.upload || 0) + (src.region || 0)) + '） | 累计命中 ' + (st.hits || 0) + ' 次 · <span style="text-decoration:underline;cursor:pointer" onclick="toggleLearnDetail()">点击查看/管理</span>';
+    if (learnDetailVisible) renderLearnDetail();
+  } catch (e) {}
+}
+let learnDetailVisible = false;
+let learnEntriesCache = [];
+function toggleLearnDetail() {
+  learnDetailVisible = !learnDetailVisible;
+  let d = $('learnDetail');
+  if (d) { d.remove(); return; }
+  d = document.createElement('div');
+  d.className = 'learn-detail';
+  d.id = 'learnDetail';
+  $('learnBar').after(d);
+  renderLearnDetail();
+}
+function renderLearnDetail() {
+  const d = $('learnDetail');
+  if (!d) return;
+  if (!learnEntriesCache.length) { d.innerHTML = '<div>学习库为空——正常识别/喂养/纠错后会自动积累</div>'; return; }
+  d.innerHTML = learnEntriesCache.map(function (e) {
+    const c = e.cfg || {};
+    const regionTxt = c.customRegion ? '框选(' + Math.round(c.customRegion.x0*100) + ',' + Math.round(c.customRegion.y0*100) + '~' + Math.round(c.customRegion.x1*100) + ',' + Math.round(c.customRegion.y1*100) + ')' : ({auto:'智能序列',full:'全图',bottom:'下部',top:'顶部',lb:'左下角',rb:'右下角',lt:'左上角',rt:'右上角'})[c.region] || c.region;
+    return '<div>' + e.dims + ' | 期望 ' + (e.expected ? e.expected.y + '.' + e.expected.mo + '.' + e.expected.d : '-') + ' | ' + regionTxt + ' 高' + Math.round((c.crop||0)*100) + '% 反色' + (c.invert || 'auto') + ' 阈值' + c.threshold + ' ' + (c.maxWidth || '') + 'px PSM' + (c.psm || '') + ' | 来源:' + (e.source || '') + ' | <span class="del" onclick="removeLearn(\'' + e.dims + '\')">删除</span></div>';
+  }).join('');
+}
+async function removeLearn(dims) {
+  if (!confirm('确定删除 ' + dims + ' 的学习记录？删除后该尺寸照片恢复自动探索')) return;
+  await fetch('/api/learnings/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dims }) });
+  await refreshLearnBar();
+  refreshLogs();
+}
+setInterval(refreshLogs, 1500);
+setInterval(refreshLogFiles, 30000); // 存档日期列表 30 秒刷一次
+refreshLogFiles();
+fetchSysInfo();
+
+// ---------- 启动恢复进度（仅显示） ----------
+async function restoreJob() {
+  try {
+    const r = await fetch('/api/job'); const j = await r.json();
+    if (!j.ok || !j.job) return;
+    const job = j.job;
+    if (job.type && job.type !== 'handle') return;
+    if (!job.stats || !job.stats.total) return;
+    stats = { ...job.stats };
+    $('cards').innerHTML = '';
+    (job.files || []).forEach((f, i) => {
+      if (!f) return;
+      const status = f.status === 'pending' ? 'detected' : f.status;
+      if (handleItems[i]) handleItems[i].status = status;
+      addCard({ index: i, name: f.name, path: f.path, url: null, status });
+    });
+    updateStats();
+    setProgress(stats.done / Math.max(1, stats.total), job.paused, job.current);
+    syncButtons();
+    setHint('已恢复上次任务进度显示（' + (job.running ? '后台仍在运行' : '已结束') + '）。刷新后请重新拖入同一文件夹继续，未处理的照片仍在原目录。', 'warn');
+  } catch (e) {}
+}
+
+// ---------- 进度 ----------
+function setProgress(ratio, isPaused, current) {
+  const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 100);
+  $('progText').textContent = pct + '%（' + stats.done + '/' + stats.total + '）';
+  $('progFill').style.width = pct + '%';
+  $('progFill').className = 'fill' + (isPaused ? ' paused' : '');
+  $('progStatus').textContent = isPaused ? '⏸ 已暂停' : (stoppedFlag ? '⏹ 已停止' : (processing ? '识别中…' : ''));
+  $('curFile').textContent = current ? '当前：' + current : '';
+}
+function updateProgressUI(current) {
+  setProgress(stats.total ? stats.done / stats.total : 0, paused, current || '');
+  updateStats();
+}
+function updateStats() {
+  $('stDone').textContent = stats.done; $('stTotal').textContent = stats.total;
+  $('stSorted').textContent = stats.sorted; $('stUnknown').textContent = stats.unknown; $('stFailed').textContent = stats.failed;
+}
+
+// ---------- 按钮（常显 + 状态禁用） ----------
+function syncButtons() {
+  const hasFiles = handleItems.length > 0;
+  const busy = processing;
+  $('btnStart').disabled = !hasFiles || busy;
+  $('btnStart').textContent = learnMode ? '开始学习' : '开始识别';
+  const pb = $('btnPause');
+  pb.disabled = !busy;
+  pb.textContent = paused ? '▶ 继续' : '⏸ 暂停';
+  $('btnStop').disabled = !busy;
+  $('btnClear').disabled = busy;
+}
+
+async function togglePause() {
+  if (!processing) return;
+  paused = !paused;
+  fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: paused ? 'paused' : 'resumed' }) }).catch(() => {});
+  syncButtons();
+  setProgress(stats.total ? stats.done / stats.total : 0, paused, '');
+}
+async function stopJob() {
+  if (!processing) return;
+  stoppedFlag = true;
+  paused = false;
+  fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'stopped' }) }).catch(() => {});
+  syncButtons();
+  setHint('已请求停止（处理完当前这张后停下）', 'warn');
+}
+async function clearJob() {
+  if (processing) return alert('任务运行中，请先停止');
+  const r = await fetch('/api/job', { method: 'DELETE' });
+  const j = await r.json();
+  if (!j.ok) return alert(j.error);
+  stats = { total: 0, done: 0, sorted: 0, unknown: 0, failed: 0 };
+  $('cards').innerHTML = '';
+  handleItems = [];
+  updateStats();
+  setProgress(0, false, '');
+  syncButtons();
+  setHint('进度数据已清空');
+}
+
+// ---------- 拖拽区 ----------
+const dz = $('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', onDrop);
+dz.addEventListener('click', async () => {
+  if (!window.showDirectoryPicker) return setHint('当前浏览器不支持文件夹选择，请使用 Chrome / Edge。', 'warn');
+  const h = await window.showDirectoryPicker({ mode: 'readwrite' }).catch(() => null);
+  if (h) { dirHandle = h; scanHandle(); }
+});
+
+async function onDrop(e) {
+  e.preventDefault(); dz.classList.remove('over');
+  const items = [...(e.dataTransfer.items || [])];
+  for (const it of items) {
+    if (it.kind !== 'file') continue;
+    let h = null;
+    if (it.getAsFileSystemHandle) { try { h = await it.getAsFileSystemHandle(); } catch (_) {} }
+    if (h && h.kind === 'directory') {
+      dirHandle = h;
+      const perm = await h.requestPermission({ mode: 'readwrite' }).catch(() => 'denied');
+      if (perm !== 'granted') {
+        return setHint('已检测到文件夹，但未授予读写权限（无法移动照片）。请点击拖拽区重新选择并在弹窗点「允许」。', 'warn');
+      }
+      return scanHandle();
+    }
+  }
+  setHint('未检测到文件夹，请把照片文件夹拖进来。', 'warn');
+}
+
+// ---------- 目录智能分派扫描（v1.0.8） ----------
+async function scanHandle() {
+  try {
+    handleItems = [];
+    learnMode = false;
+    canFeed = false;
+    const dirName = dirHandle.name;
+
+    // 目录名 = 未识别 → 整目录学习模式
+    if (dirName === '未识别') {
+      const subs = [];
+      for await (const [name, h] of dirHandle.entries()) {
+        if (h.kind === 'directory' && parseDateInput(name)) subs.push({ name, handle: h });
+      }
+      if (subs.length) {
+        for (const sb of subs) {
+          const exp = parseDateInput(sb.name);
+          for await (const [fn, fh] of sb.handle.entries()) {
+            if (fh.kind === 'file' && IMAGE_EXT_RE.test(fn)) {
+              handleItems.push({ name: fn, handle: fh, srcSub: sb.name, kind: 'learn', expected: exp, folderName: '未识别', moved: null, status: 'detected' });
+            }
+          }
+        }
+        await prepItems();
+        learnMode = true;
+        canFeed = true;
+        stoppedFlag = false; paused = false;
+        jobType = 'handle';
+        stats = { total: handleItems.length, done: 0, sorted: 0, unknown: 0, failed: 0 };
+        $('btnStart').textContent = '开始学习';
+        updateStats(); updateProgressUI('');
+        currentGroup = '__all__';
+    renderCards(handleItems.map((it, i) => ({ index: i, name: it.name, url: it.url, status: 'detected' })));
+    refreshGroupTabs();
+        syncButtons(); saveLastDir();
+        setHint(`📚 学习模式：「未识别」目录下有 ${subs.length} 个日期子目录、共 ${handleItems.length} 张照片。点「开始学习」按子目录名作为正确答案训练（照片保留原处）`, 'ok');
+        refreshLogs();
+        return;
+      }
+    }
+
+    // 智能分派：顶层照片 / 子目录分类
+    let skipDirs = 0;
+    for await (const [name, h] of dirHandle.entries()) {
+      if (h.kind === 'file') {
+        if (IMAGE_EXT_RE.test(name)) handleItems.push({ name, handle: h, kind: 'normal', folderName: null, moved: null, status: 'detected' });
+      } else if (h.kind === 'directory') {
+        if (name === '未识别') {
+          canFeed = true;
+          // 未识别子目录：若其下还有日期子目录 → 学习项；散图 → 正常识别
+          let hasDateSub = false;
+          for await (const [dn, dh] of h.entries()) {
+            if (dh.kind === 'directory' && parseDateInput(dn)) {
+              hasDateSub = true;
+              const exp = parseDateInput(dn);
+              for await (const [fn, fh] of dh.entries()) {
+                if (fh.kind === 'file' && IMAGE_EXT_RE.test(fn)) {
+                  handleItems.push({ name: fn, handle: fh, srcSub: '未识别/' + dn, kind: 'learn', expected: exp, folderName: '未识别', moved: null, status: 'detected' });
+                }
+              }
+            }
+          }
+          if (!hasDateSub) {
+            for await (const [fn, fh] of h.entries()) {
+              if (fh.kind === 'file' && IMAGE_EXT_RE.test(fn)) {
+                handleItems.push({ name: fn, handle: fh, srcSub: name, kind: 'normal', folderName: null, moved: null, status: 'detected' });
+              }
+            }
+          }
+        } else if (parseDateInput(name)) {
+          skipDirs++; // 已是日期目录，跳过
+        } else {
+          for await (const [fn, fh] of h.entries()) {
+            if (fh.kind === 'file' && IMAGE_EXT_RE.test(fn)) {
+              handleItems.push({ name: fn, handle: fh, srcSub: name, kind: 'normal', folderName: null, moved: null, status: 'detected' });
+            }
+          }
+        }
+      }
+    }
+
+    if (!handleItems.length) {
+      return setHint(`「${dirName}」未检测到待处理照片（日期子目录已跳过 ${skipDirs} 个）`, 'warn');
+    }
+    await prepItems();
+    stoppedFlag = false; paused = false;
+    jobType = 'handle';
+    stats = { total: handleItems.length, done: 0, sorted: 0, unknown: 0, failed: 0 };
+    $('btnStart').textContent = '开始识别';
+    updateStats(); updateProgressUI('');
+    currentGroup = '__all__';
+    renderCards(handleItems.map((it, i) => ({ index: i, name: it.name, url: it.url, status: 'detected' })));
+    refreshGroupTabs();
+    syncButtons(); saveLastDir();
+    const learnN = handleItems.filter(x => x.kind === 'learn').length;
+    let msg = `✅ 已检测到 ${handleItems.length} 张照片（来自「${dirName}」）`;
+    if (learnN) msg += `，其中 ${learnN} 张将进入学习模式`;
+    if (skipDirs) msg += `，跳过已有日期目录 ${skipDirs} 个`;
+    setHint(msg + '。点击「开始识别」运行。', 'ok');
+    fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'start', stats }) });
+    refreshLogs();
+  } catch (e) {
+    setHint('读取文件夹失败：' + e.message, 'warn');
+  }
+}
+
+async function prepItems() {
+  for (const it of handleItems) {
+    it.file = await it.handle.getFile();
+    it.url = URL.createObjectURL(it.file);
+  }
+}
+
+// ---------- 目录句柄持久化（刷新恢复） ----------
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('ocr_handle_db', 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(k, v) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const t = db.transaction('kv', 'readwrite');
+    t.objectStore('kv').put(v, k);
+    t.oncomplete = () => res();
+    t.onerror = () => rej(t.error);
+  });
+}
+async function idbGet(k) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const t = db.transaction('kv', 'readonly');
+    const q = t.objectStore('kv').get(k);
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+async function saveLastDir() {
+  try { await idbSet('lastDir', dirHandle); } catch (e) {}
+}
+async function restoreLastDir() {
+  try {
+    const h = await idbGet('lastDir');
+    if (!h || !h.name) return;
+    const btn = document.createElement('button');
+    btn.className = 'mini';
+    btn.style.marginTop = '10px';
+    btn.textContent = `↻ 继续上次文件夹「${h.name}」（点击恢复）`;
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const perm = await h.requestPermission({ mode: 'readwrite' }).catch(() => 'denied');
+      if (perm !== 'granted') return setHint('未授予权限，请重新拖入文件夹', 'warn');
+      dirHandle = h;
+      btn.remove();
+      scanHandle();
+    };
+    dz.appendChild(btn);
+  } catch (e) {}
+}
+
+// ---------- 识别主循环（混合分派：学习项 + 正常项） ----------
+async function startProcess() {
+  if (processing) return;
+  if (!dirHandle || !handleItems.length) return;
+  const permOk = await ensureWritePermission();
+  if (!permOk) {
+    return setHint('❌ 浏览器未授予文件夹读写权限。请刷新页面后重新拖入文件夹并在弹窗点「允许」。', 'warn');
+  }
+  processing = true; stoppedFlag = false; paused = false;
+  firstError = ''; cardErrors = {};
+  gcfg = { ...gcfg, ...cfgFromGlobal() }; localStorage.setItem(LOCAL_KEY, JSON.stringify(gcfg));
+  syncButtons();
+  stats = { total: handleItems.length, done: 0, sorted: 0, unknown: 0, failed: 0 };
+  updateStats();
+  let idx = 0;
+  const run = async () => {
+    while (true) {
+      if (stoppedFlag) return;
+      const i = idx++;
+      if (i >= handleItems.length) return;
+      while (paused && !stoppedFlag) await new Promise(r => setTimeout(r, 300));
+      if (stoppedFlag) return;
+      const it = handleItems[i];
+      updateProgressUI(it.name);
+      setCard(i, 'processing');
+      try {
+        if (it.kind === 'learn' && it.expected) {
+          const buf = await it.file.arrayBuffer();
+          const r = await fetch(`/api/learn-upload?expected=${encodeURIComponent(dateStr(it.expected))}&w=0&h=0&name=${encodeURIComponent(it.name)}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buf,
+          });
+          const j = await r.json();
+          if (j.ok && j.found) {
+            stats.sorted++;
+            setCard(i, 'learned', dateStr(it.expected));
+            reportFile(i, it.name, 'learned', dateStr(it.expected));
+          } else {
+            stats.unknown++;
+            setCard(i, 'unknown');
+            recordError(i, `学习未命中：${it.name}（期望 ${dateStr(it.expected)}）`);
+          }
+        } else {
+          const j = await ocrFile(it.file, null, it.name);
+          if (j.ok && j.date) {
+            const folderName = `${j.date.y}.${j.date.mo}.${j.date.d}`;
+            await moveToDir(it, folderName);
+            stats.sorted++;
+            setCard(i, 'sorted', folderName);
+            reportFile(i, it.name, 'sorted', folderName);
+          } else if (!j.ok && j.error && /引擎|数据为空/.test(j.error)) {
+            stats.failed++;
+            setCard(i, 'failed', null, j.error);
+            recordError(i, j.error);
+          } else {
+            await moveToDir(it, '未识别');
+            stats.unknown++;
+            setCard(i, 'unknown', '未识别');
+            reportFile(i, it.name, 'unknown', '未识别');
+          }
+        }
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        stats.failed++;
+        setCard(i, 'failed', null, msg);
+        recordError(i, msg);
+        refreshLogs();
+      }
+      stats.done++;
+      reportProgress(it.name);
+      updateProgressUI(it.name);
+    }
+  };
+  // 并行度与 OCR worker 池对齐（v1.0.9：按 CPU 核数自适应 2~4）
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => run()));
+  processing = false;
+  syncButtons();
+  if (firstError) setHint('⚠ 有 ' + stats.failed + ' 张失败，第一条原因：' + firstError + '（悬停失败卡片徽标可看原因）', 'warn');
+  else if (learnMode) setHint(`📚 学习完成：${stats.sorted} 张学会，照片保留原处。现在拖入照片文件夹识别，同尺寸会秒识别`, 'ok');
+  if (!stoppedFlag) fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'done', stats }) });
+  refreshLogs();
+}
+
+function reportFile(i, name, status, folder) {
+  fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'file', index: i, name, status, folder }) }).catch(() => {});
+}
+function reportProgress(current) {
+  fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'progress', stats, current }) }).catch(() => {});
+}
+function recordError(i, msg) {
+  cardErrors[i] = msg;
+  if (!firstError) firstError = msg;
+  fetch('/api/job/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'error', index: i, message: msg }) }).catch(() => {});
+}
+
+// ---------- 移动 ----------
+function bumpName(name, i) {
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot) : '';
+  return `${base}(${i})${ext}`;
+}
+async function moveToDir(it, folderName) {
+  const dir = await dirHandle.getDirectoryHandle(folderName, { create: true });
+  let n = it.name, i = 1;
+  while (true) {
+    try { await dir.getFileHandle(n); n = bumpName(it.name, i++); }
+    catch (e) { break; }
+  }
+  const fh = await dir.getFileHandle(n, { create: true });
+  const w = await fh.createWritable();
+  await w.write(it.file);
+  await w.close();
+  const src = it.srcSub ? await dirHandle.getDirectoryHandle(it.srcSub.split('/')[0]) : dirHandle;
+  await src.removeEntry(it.name);
+  it.folderName = folderName; it.moved = n;
+}
+async function moveInDir(fromName, toName, fileName) {
+  if (fromName === toName) return fileName;
+  const from = fromName ? await dirHandle.getDirectoryHandle(fromName) : dirHandle;
+  const fh0 = await from.getFileHandle(fileName);
+  const file = await fh0.getFile();
+  const to = await dirHandle.getDirectoryHandle(toName, { create: true });
+  let n = fileName, i = 1;
+  while (true) {
+    try { await to.getFileHandle(n); n = bumpName(fileName, i++); }
+    catch (e) { break; }
+  }
+  const fh = await to.getFileHandle(n, { create: true });
+  const w = await fh.createWritable();
+  await w.write(file);
+  await w.close();
+  await from.removeEntry(fileName);
+  return n;
+}
+async function ensureWritePermission() {
+  try {
+    let q = await dirHandle.queryPermission({ mode: 'readwrite' });
+    if (q === 'granted') return true;
+    q = await dirHandle.requestPermission({ mode: 'readwrite' }).catch(() => 'denied');
+    return q === 'granted';
+  } catch (e) { return false; }
+}
+
+// ---------- 日期约束 ----------
+const RANGE_KEY = 'ocr_range_v1';
+function buildRange() {
+  const text = $('dateAllow').value.trim();
+  if (!text) return undefined;
+  const tokens = [...text.matchAll(/(\d{4})\s*[.\/－\-]\s*(\d{1,2})\s*[.\/－\-]\s*(\d{1,2})/g)]
+    .map(m => {
+      const y = +m[1], mo = +m[2], d = +m[3];
+      if (y < 2000 || y > 2038 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+      return y * 10000 + mo * 100 + d;
+    })
+    .filter(v => v !== null);
+  if (!tokens.length) return undefined;
+  if (/[~～至]/.test(text) && tokens.length === 2) {
+    return { min: Math.min(tokens[0], tokens[1]), max: Math.max(tokens[0], tokens[1]) };
+  }
+  return { list: [...new Set(tokens)] };
+}
+function confirmRange() {
+  const text = $('dateAllow').value.trim();
+  const r = buildRange();
+  if (text && !r) {
+    setHint('❌ 日期约束格式无效：没解析出合法日期（示例 2026.4.15，2026.4.16 或 2026.4.15~2026.4.18）', 'warn');
+    return;
+  }
+  localStorage.setItem(RANGE_KEY, JSON.stringify({ text }));
+  fillDateOptions();
+  if (r) setHint('✅ 日期约束已确认生效（已保存，刷新不丢）', 'ok');
+  else setHint('日期约束为空：不限制日期');
+}
+function clearRange() {
+  $('dateAllow').value = '';
+  localStorage.removeItem(RANGE_KEY);
+  fillDateOptions();
+  setHint('已清除日期约束');
+}
+function restoreRange() {
+  try {
+    const r = JSON.parse(localStorage.getItem(RANGE_KEY) || 'null');
+    if (r) $('dateAllow').value = r.text || '';
+  } catch (e) {}
+}
+function fillDateOptions() {
+  const r = buildRange();
+  const opts = [];
+  if (r && r.list) {
+    opts.push(...r.list.map(n => `${Math.floor(n / 10000)}.${Math.floor(n % 10000 / 100)}.${n % 100}`));
+  } else if (r && (r.min || r.max)) {
+    let t = r.min || 20260101;
+    const end = r.max || t;
+    let guard = 0;
+    while (t <= end && guard < 120) {
+      const y = Math.floor(t / 10000), mo = Math.floor(t % 10000 / 100), d = t % 100;
+      const dt = new Date(y, mo - 1, d);
+      if (dt.getMonth() === mo - 1 && dt.getDate() === d) opts.push(`${y}.${mo}.${d}`);
+      dt.setDate(dt.getDate() + 1);
+      t = dt.getFullYear() * 10000 + (dt.getMonth() + 1) * 100 + dt.getDate();
+      guard++;
+    }
+  }
+  $('dateOptions').innerHTML = opts.map(o => `<option value="${o}">`).join('');
+  $('lbCorrectSel').innerHTML = '<option value="">选择日期…</option>' + opts.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+// ---------- 参数配置（主面板 + 灯箱同步） ----------
+function thModeVal(mode, slider) {
+  if (mode === '-1') return -1;
+  if (mode === '0') return 0;
+  return parseInt(slider, 10) || 210;
+}
+const LOCAL_KEY = 'ocr_cfg_v1';
+let gcfg = { region: 'auto', regionMode: 'cascade', smart: true, invert: 'on', crop: 0.3, maxWidth: 1200, threshold: -1, psm: '6', whitelist: true };
+try { Object.assign(gcfg, JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}')); } catch (e) {}
+
+function cfgFromGlobal() {
+  return {
+    region: $('gRegion').value,
+    regionMode: $('gRegionMode').value,
+    smart: $('gSmart').checked,
+    invert: $('gInvert').value,
+    crop: parseInt($('gCrop').value, 10) / 100,
+    maxWidth: parseInt($('gMaxW').value, 10),
+    // 智能自适应开启时阈值强制走自适应（Otsu），手动值仅关闭智能时生效
+    threshold: $('gSmart').checked ? -1 : thModeVal($('gThMode').value, $('gTh').value),
+    psm: $('gPsm').value,
+    whitelist: $('gWl').checked,
+  };
+}
+function syncGlobalPanel() {
+  const c = gcfg;
+  $('gRegion').value = c.region;
+  $('gRegionMode').value = c.regionMode || 'cascade';
+  $('gSmart').checked = (c.smart !== false);
+  $('gInvert').value = c.invert;
+  const smart = c.smart !== false;
+  $('gCrop').disabled = smart; $('gMaxW').disabled = smart; $('gPsm').disabled = smart;
+  $('gThMode').disabled = smart; // 智能开启时阈值模式锁定为自适应
+  $('gCropV').textContent = smart ? '自动' : Math.round(c.crop * 100) + '%';
+  if (!smart) { $('gCrop').value = Math.round(c.crop * 100); $('gMaxW').value = String(c.maxWidth); $('gPsm').value = c.psm; }
+  $('gThMode').value = c.threshold === -1 ? '-1' : (c.threshold === 0 ? '0' : 'manual');
+  $('gTh').disabled = smart || (c.threshold !== -1 && c.threshold !== 0);
+  if (c.threshold > 0) $('gTh').value = c.threshold;
+  $('gThV').textContent = smart ? '自动(Otsu优先,30-80序列)' : (c.threshold === -1 ? '自适应' : (c.threshold === 0 ? '关' : c.threshold));
+  cfgToPanel(c);
+}
+function applyGlobalCfg() {
+  gcfg = { ...gcfg, ...cfgFromGlobal() };
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(gcfg));
+  syncGlobalPanel();
+  $('gCfgHint').textContent = '✅ 参数已保存';
+}
+function quickFast() {
+  gcfg = { ...gcfg, region: 'lb', regionMode: gcfg.regionMode || 'cascade', smart: gcfg.smart !== false, invert: 'on', crop: 0.3, maxWidth: 1200, psm: '6', threshold: -1, whitelist: true };
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(gcfg));
+  syncGlobalPanel();
+  $('gCfgHint').textContent = '✅ 快速模式（左下角 30% · 白字反色 · 自适应阈值 · PSM6）——实测单张 0.6~2 秒';
+}
+function resetGlobalCfg() {
+  gcfg = { region: 'lb', invert: 'on', crop: 0.3, maxWidth: 1200, threshold: -1, psm: '6', whitelist: true };
+  localStorage.removeItem(LOCAL_KEY);
+  syncGlobalPanel();
+  $('gCfgHint').textContent = '已恢复默认（快速模式）';
+}
+
+// ---------- 识别并行线程（v1.2.1） ----------
+async function fetchSysInfo() {
+  try {
+    const r = await fetch('/api/sys'); const j = await r.json();
+    if (!j.ok) return;
+    $('sysInfo').textContent = `CPU：${j.cpu} · ${j.cores} 线程 · ${j.memGB}GB 内存 → 建议 ${j.recommended} 路并行（当前 ${j.value} 路）`;
+    $('sysInfo').className = 'hint ok';
+  } catch (e) { $('sysInfo').textContent = '获取失败：' + e.message; }
+}
+function syncThreadPanel(t) {
+  if (!t) return;
+  $('gThreadMode').value = t.mode === 'custom' ? 'custom' : 'auto';
+  $('gThreadVal').disabled = t.mode !== 'custom';
+  $('gThreadVal').value = t.value;
+  if (t.mode === 'auto') $('gThreadVal').value = t.value;
+}
+function onThreadModeChange() {
+  const mode = $('gThreadMode').value;
+  $('gThreadVal').disabled = mode !== 'custom';
+  applyThreads();
+}
+async function applyThreads() {
+  const mode = $('gThreadMode').value;
+  const value = parseInt($('gThreadVal').value, 10) || 4;
+  try {
+    const r = await fetch('/api/threads', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, value }),
+    });
+    const j = await r.json();
+    if (!j.ok) { $('sysInfo').textContent = '❌ ' + j.error; $('sysInfo').className = 'hint warn'; return; }
+    CONCURRENCY = j.value;
+    $('gThreadVal').value = j.value;
+    $('sysInfo').textContent = `✅ 已切换为 ${j.value} 路并行（${j.mode === 'auto' ? '自适应，本机建议 ' + j.recommended : '自定义'}），点「开始识别」时按新并行数运行（当前批次不受影响）`;
+    $('sysInfo').className = 'hint ok';
+  } catch (e) { $('sysInfo').textContent = '设置失败：' + e.message; $('sysInfo').className = 'hint warn'; }
+}
+
+function cfgFromPanel() {
+  return {
+    region: $('cfgRegion').value,
+    invert: $('cfgInvert').value,
+    crop: parseInt($('cfgCrop').value, 10) / 100,
+    maxWidth: parseInt($('cfgMaxW').value, 10),
+    threshold: thModeVal($('cfgThMode').value, $('cfgTh').value),
+    psm: $('cfgPsm').value,
+    whitelist: $('cfgWl').checked,
+  };
+}
+function cfgToPanel(c) {
+  $('cfgRegion').value = c.region; $('cfgInvert').value = c.invert;
+  $('cfgCrop').value = Math.round(c.crop * 100); $('cfgCropV').textContent = Math.round(c.crop * 100) + '%';
+  $('cfgMaxW').value = String(c.maxWidth);
+  $('cfgThMode').value = c.threshold === -1 ? '-1' : (c.threshold === 0 ? '0' : 'manual');
+  $('cfgTh').disabled = (c.threshold !== -1 && c.threshold !== 0);
+  if (c.threshold > 0) $('cfgTh').value = c.threshold;
+  $('cfgThV').textContent = c.threshold === -1 ? '自适应' : (c.threshold === 0 ? '关' : c.threshold);
+  $('cfgPsm').value = c.psm; $('cfgWl').checked = !!c.whitelist;
+}
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => previewOcr(false), 700);
+}
+
+// ---------- OCR 请求 ----------
+// v1.0.9：name/preview 传给服务端，首页工作日志实时显示识别步骤
+async function ocrFile(fileOrBlob, cfg, name, preview) {
+  const c = { ...(cfg || gcfg), dateRange: buildRange() };
+  let qs = '/api/ocr?cfg=' + encodeURIComponent(JSON.stringify(c));
+  if (name) qs += '&name=' + encodeURIComponent(name);
+  if (preview) qs += '&preview=1';
+  const r = await fetch(qs, {
+    method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: fileOrBlob,
+  });
+  return r.json();
+}
+
+// ---------- 卡片 ----------
+function badgeText(f) {
+  if (f.status === 'detected') return '已检测';
+  if (f.status === 'processing') return '识别中…';
+  if (f.status === 'sorted') return '→ ' + f.folder;
+  if (f.status === 'learned') return '📚 ' + f.folder;
+  if (f.status === 'unknown') return '未识别';
+  if (f.status === 'failed') return '失败';
+  return f.status;
+}
+function cardHtml(f) {
+  const imgSrc = f.url ? f.url : '/api/file?p=' + encodeURIComponent(f.path || '');
+  return `
+    <img class="thumb" src="${imgSrc}" onerror="this.style.visibility='hidden'">
+    <div class="meta">
+      <div class="name" title="${esc(f.name)}">${esc(f.name)}</div>
+      <div class="row2">
+        <span class="badge ${f.status}" data-badge>${badgeText(f)}</span>
+        ${f.status === 'unknown' ? `<button class="link" title="打开编辑框：自动教它 / 框选手动调参，重新识别并记录" onclick="event.stopPropagation(); openLb(${f.index})">识别学习</button>` : ''}
+        ${f.status === 'sorted' || f.status === 'unknown' ? `<button class="link" title="快捷移入「未识别」目录，之后重新识别" onclick="event.stopPropagation(); discardPhoto(${f.index})">识别出错↓</button>` : ''}
+      </div>
+    </div>`;
+}
+function addCard(f) {
+  const div = document.createElement('div');
+  div.className = 'card'; div.id = 'card-' + f.index;
+  div.innerHTML = cardHtml(f);
+  $('cards').appendChild(div);
+}
+function renderCards(list) {
+  $('cards').innerHTML = '';
+  list.forEach(addCard);
+}
+function setCard(i, status, folder, errMsg) {
+  handleItems[i].status = status;
+  if (folder !== undefined && folder !== null) handleItems[i].folderName = folder;
+  updateCard({ index: i, name: '', status, folder, errMsg });
+  refreshGroupTabs();
+}
+function updateCard(f) {
+  const c = $('card-' + f.index);
+  if (!c) return;
+  const title = f.errMsg ? ` title="${esc(f.errMsg)}"` : '';
+  c.querySelector('[data-badge]').outerHTML = `<span class="badge ${f.status}" data-badge${title}>${badgeText(f)}${f.errMsg ? ' ⚠' : ''}</span>`;
+}
+// ---------- 预览分组 tab（v1.0.8 批次3） ----------
+let currentGroup = '__all__';
+function groupList() {
+  const groups = [{ key: '__all__', label: '全部照片' }];
+  const unknown = handleItems.filter(x => x.status === 'unknown');
+  if (unknown.length) groups.push({ key: '__unknown__', label: '未识别 (' + unknown.length + ')' });
+  const folders = {};
+  for (const it of handleItems) {
+    if (it.status === 'sorted' || it.status === 'learned') {
+      folders[it.folderName] = (folders[it.folderName] || 0) + 1;
+    }
+  }
+  Object.keys(folders).sort((a, b) => b.localeCompare(a)).forEach(fn => {
+    groups.push({ key: 'f:' + fn, label: fn + ' (' + folders[fn] + ')' });
+  });
+  return groups;
+}
+function refreshGroupTabs() {
+  const groups = groupList();
+  $('groupTabs').innerHTML = groups.map(g =>
+    '<button class="' + (g.key === currentGroup ? 'active' : '') + '" onclick="filterGroup(\'' + g.key + '\')">' + esc(g.label) + '</button>'
+  ).join('');
+}
+function matchGroup(it) {
+  if (currentGroup === '__all__') return true;
+  if (currentGroup === '__unknown__') return it.status === 'unknown';
+  if (currentGroup.startsWith('f:')) return it.folderName === currentGroup.slice(2) && (it.status === 'sorted' || it.status === 'learned');
+  return true;
+}
+function filterGroup(key) {
+  currentGroup = key;
+  handleItems.forEach((it, i) => {
+    const c = $('card-' + i);
+    if (c) c.style.display = matchGroup(it) ? '' : 'none';
+  });
+  refreshGroupTabs();
+}
+function cardClick(e) {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  openLb(parseInt(card.id.slice(5), 10));
+}
+
+// ---------- 识别出错快捷处理 ----------
+async function discardPhoto(i) {
+  const it = handleItems[i];
+  if (!it) return;
+  const c = $('card-' + i);
+  const prevBadge = c ? ((c.querySelector('[data-badge]').className.match(/badge (\w+)/) || [])[1]) : null;
+  try {
+    if (it.folderName) {
+      it.moved = await moveInDir(it.folderName, '未识别', it.moved);
+      it.folderName = '未识别';
+    } else {
+      await moveToDir(it, '未识别');
+    }
+    if (prevBadge === 'sorted' || prevBadge === 'learned') { stats.sorted--; stats.unknown++; }
+    else if (prevBadge !== 'unknown') { stats.unknown++; }
+    setCard(i, 'unknown', '未识别');
+    reportFile(i, it.name, 'unknown', '未识别');
+    updateStats();
+    if (lbIndex === i) { $('lbTarget').value = '未识别'; lbMsg('✅ 已丢进「未识别」，之后重新识别这张'); }
+    else setHint(`✅ ${it.name} 已丢进「未识别」目录`, 'ok');
+    refreshLogs();
+  } catch (e) {
+    const msg = '丢进未识别失败：' + (e.message || e);
+    if (lbIndex === i) lbMsg('❌ ' + msg, true); else alert(msg);
+    refreshLogs();
+  }
+}
+
+// ---------- 灯箱 ----------
+function openLb(i) {
+  lbIndex = i;
+  const it = handleItems[i];
+  if (!it) return;
+  $('lbTitle').textContent = `${it.name}  (${i + 1}/${handleItems.length})`;
+  $('lbImg').src = it.url || '';
+  $('lbImg').onload = showLearnedInfo;
+  cfgToPanel(gcfg);
+  $('ocrOut').textContent = '点击「识别预览」或修改参数实时查看 OCR 识别原文';
+  $('ocrDate').textContent = '';
+  $('lbTarget').value = it.folderName || '';
+  $('lbLog').innerHTML = '';
+  $('lbCorrectSel').value = '';
+  $('probeHint').textContent = '';
+  fillDateOptions();
+  $('lbMsg').textContent = '';
+  clearRegion();
+  $('lightbox').classList.add('show');
+}
+function closeLb() { $('lightbox').classList.remove('show'); lbIndex = -1; }
+function lbBackdrop(e) { if (e.target === $('lightbox')) closeLb(); }
+function navLb(dir) {
+  if (lbIndex < 0) return;
+  const next = lbIndex + dir;
+  if (next < 0 || next >= handleItems.length) { lbMsg(dir < 0 ? '已经是第一张' : '已经是最后一张', true); return; }
+  openLb(next);
+}
+document.addEventListener('keydown', e => {
+  if (!$('lightbox').classList.contains('show')) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); navLb(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); navLb(1); }
+  if (e.key === 'Escape') closeLb();
+});
+
+// ---------- 框选识别区域（v1.0.9：合并两段重复实现，坐标与框显示统一按图片实际渲染区换算） ----------
+(function initRegionDrag() {
+  const wrap = $('lbImgWrap'), box = $('regionBox'), img = $('lbImg');
+  let dragging = false;
+  let sx = 0, sy = 0;    // 起点（相对图片 0~1）
+  let spx = 0, spy = 0;  // 起点（wrap 内像素，用于画框，修复图片居中留白偏移）
+  function rel(e) {
+    const r = img.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+    };
+  }
+  function toWrapPx(e) {
+    const wrapR = wrap.getBoundingClientRect();
+    const r = img.getBoundingClientRect();
+    const p = rel(e);
+    return {
+      px: (r.left - wrapR.left) + p.x * r.width,
+      py: (r.top - wrapR.top) + p.y * r.height,
+      x: p.x, y: p.y,
+    };
+  }
+  wrap.addEventListener('mousedown', e => {
+    if (!img.src || e.target.tagName !== 'IMG') return;
+    dragging = true;
+    customRegion = null; // v1.0.9 热修：重新开始框选时先清空旧框，单击不拖动不再残留零面积框
+    const p = toWrapPx(e);
+    sx = p.x; sy = p.y; spx = p.px; spy = p.py;
+    box.style.display = 'block';
+    box.style.left = p.px + 'px'; box.style.top = p.py + 'px';
+    box.style.width = '0'; box.style.height = '0';
+    e.preventDefault();
+  });
+  wrap.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const p = toWrapPx(e);
+    // v1.0.9 热修：最小尺寸门槛（宽高都 ≥1.5%），单击或误触不产生垃圾框
+    if (Math.abs(p.x - sx) < 0.015 || Math.abs(p.y - sy) < 0.015) return;
+    const bx0 = Math.min(spx, p.px), bx1 = Math.max(spx, p.px);
+    const by0 = Math.min(spy, p.py), by1 = Math.max(spy, p.py);
+    box.style.left = bx0 + 'px'; box.style.top = by0 + 'px';
+    box.style.width = (bx1 - bx0) + 'px'; box.style.height = (by1 - by0) + 'px';
+    const x0 = Math.min(sx, p.x), x1 = Math.max(sx, p.x);
+    const y0 = Math.min(sy, p.y), y1 = Math.max(sy, p.y);
+    customRegion = { x0, y0, x1, y1 };
+    $('regionHint').textContent = '已框选 (' + Math.round(x0*100) + ',' + Math.round(y0*100) + ') ~ (' + Math.round(x1*100) + ',' + Math.round(y1*100) + ')';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+})();
+function clearRegion() {
+  customRegion = null;
+  $('regionBox').style.display = 'none';
+  $('regionHint').textContent = '未框选';
+}
+
+async function currentPhoto() {
+  const it = handleItems[lbIndex];
+  if (!it) return null;
+  if (it.folderName) {
+    const dir = await dirHandle.getDirectoryHandle(it.folderName);
+    const fh = await dir.getFileHandle(it.moved);
+    return { file: await fh.getFile(), it };
+  }
+  return { file: it.file, it };
+}
+function currentPhotoDims() {
+  const img = $('lbImg');
+  if (img.naturalWidth) return { w: img.naturalWidth, h: img.naturalHeight };
+  return { w: 0, h: 0 };
+}
+
+async function showLearnedInfo() {
+  try {
+    const dims = currentPhotoDims();
+    if (!dims.w) return;
+    const r = await fetch('/api/learnings'); const j = await r.json();
+    const e = (j.entries || []).find(x => x.dims === dims.w + 'x' + dims.h);
+    if (e) {
+      const c = e.cfg || {};
+      const regionTxt = c.customRegion ? '框选区域(' + Math.round(c.customRegion.x0*100) + ',' + Math.round(c.customRegion.y0*100) + '~' + Math.round(c.customRegion.x1*100) + ',' + Math.round(c.customRegion.y1*100) + ')' : ({auto:'智能序列',full:'全图',bottom:'下部',top:'顶部',lb:'左下角',rb:'右下角',lt:'左上角',rt:'右上角'})[c.region] || c.region;
+      lbLogAdd('📋 该尺寸(' + dims.w + 'x' + dims.h + ')已有学习参数：' + regionTxt + ' / 反色' + (c.invert || 'auto') + ' / 阈值' + c.threshold + ' / ' + (c.maxWidth || '') + 'px / PSM' + (c.psm || '') + '（本张优先使用；如需删除请在底部学习条里管理）');
+    }
+  } catch (e) {}
+}
+
+async function previewOcr(manual) {
+  if (lbIndex < 0) return;
+  const got = await currentPhoto();
+  if (!got) return;
+  const cfg = cfgFromPanel();
+  lbLogAdd('识别预览：' + regionName(cfg.region) + ' / 反色' + cfg.invert + ' / 阈值' + cfg.threshold + ' / ' + cfg.maxWidth + 'px / PSM' + cfg.psm);
+  $('btnPreview').innerHTML = '<span class="spin"></span> 识别中';
+  $('ocrOut').textContent = manual ? '正在识别…' : '参数变化，正在重新识别…';
+  try {
+    const j = await ocrFile(got.file, cfg, null, true);
+    if (j.ok) {
+      $('ocrOut').textContent = (j.text || '').trim() || '（无文字输出）';
+      lbLogAdd('结果：' + (j.date ? '日期 ' + dateStr(j.date) : '未提取到日期') + ' | 原文：' + ((j.text || '').trim().replace(/\s+/g, ' ').slice(0, 60) || '空'));
+      $('ocrDate').textContent = j.date ? '✅ 提取到日期：' + dateStr(j.date) : '❌ 未提取到有效日期';
+      $('ocrDate').style.color = j.date ? '#1e7f3c' : '#b23b3b';
+      if (!j.date && j.hint) {
+        $('ocrDate').textContent += '　💡 ' + j.hint;
+        $('ocrDate').style.color = '#a8720a';
+        lbLogAdd('💡 ' + j.hint);
+      }
+    } else {
+      $('ocrOut').textContent = '识别失败：' + (j.error || '');
+      lbLogAdd('失败：' + (j.error || ''));
+      $('ocrDate').textContent = '';
+    }
+  } catch (e) {
+    $('ocrOut').textContent = '请求失败：' + e.message;
+    lbLogAdd('请求失败：' + e.message);
+  }
+  $('btnPreview').textContent = '识别预览';
+}
+
+async function previewRegion() {
+  if (lbIndex < 0) return;
+  if (!customRegion) return lbMsg('请先在大图上拖拽画框', true);
+  const got = await currentPhoto();
+  if (!got) return;
+  lbMsg('识别框选区域中…');
+  const j = await ocrFile(got.file, { ...cfgFromPanel(), customRegion }, null, true);
+  if (j.ok) {
+    $('ocrOut').textContent = (j.text || '').trim() || '（无文字输出）';
+    // v1.0.9 热修：区分「框内根本没日期文字」和「有文字但没读出」，帮用户发现框错行
+    const hasText = /[0-9A-Za-z]{2,}/.test(String(j.text || ''));
+    $('ocrDate').textContent = j.date ? `✅ 框内日期：${j.date.y}.${j.date.mo}.${j.date.d}`
+      : (hasText ? '❌ 框内有文字但没读出日期，试试调整阈值/反色，或扩大框选范围'
+                 : '❌ 框内没读到文字——请确认框住的是日期所在行（拖动鼠标重新画框）');
+    $('ocrDate').style.color = j.date ? '#1e7f3c' : '#b23b3b';
+    if (j.date) lbMsg(`✅ 框内读出 ${j.date.y}.${j.date.mo}.${j.date.d}，可点「框选学习保存」记住`);
+  } else lbMsg('❌ ' + (j.error || '识别失败'), true);
+}
+
+async function saveRegionLearn() {
+  if (lbIndex < 0) return;
+  if (!customRegion) return lbMsg('请先框选区域', true);
+  const expected = parseDateInput($('lbCorrectSel').value);
+  if (!expected) return lbMsg('请先填写/选择正确日期', true);
+  const dims = currentPhotoDims();
+  const cfg = { ...cfgFromPanel(), customRegion };
+  const r = await fetch('/api/learn-save', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ w: dims.w, h: dims.h, cfg, expected: dateStr(expected) }),
+  });
+  const j = await r.json();
+  if (j.ok) lbMsg(`✅ 框选区域已记住（${dims.w}x${dims.h}）`);
+  else lbMsg('❌ ' + j.error, true);
+}
+
+// ---------- 纠错学习 ----------
+async function probeDate() {
+  if (lbIndex < 0) return;
+  const got = await currentPhoto();
+  if (!got) return;
+  if (!buildRange()) return lbMsg('请先在上方填写「日期约束」并确认，再试提取', true);
+  $('btnProbe').innerHTML = '<span class="spin"></span> 提取中';
+  $('probeHint').textContent = '';
+  lbLogAdd('试提取（按日期约束）');
+  try {
+    const j = await ocrFile(got.file, cfgFromPanel(), null, true);
+    if (j.ok && j.date) {
+      const ds = dateStr(j.date);
+      $('lbCorrectSel').value = ds;
+      $('probeHint').textContent = '✅ 提取成功：' + ds + '（已选中）→ 现在点「③ 学习并归档」';
+      $('probeHint').style.color = '#1e7f3c';
+      lbLogAdd('试提取成功：' + ds);
+    } else {
+      $('probeHint').textContent = '❌ 按当前参数+日期约束提取失败 → 请调整参数或框选区域后重试';
+      $('probeHint').style.color = '#b23b3b';
+      lbLogAdd('试提取失败：约束条件下无命中');
+    }
+  } catch (e) {
+    $('probeHint').textContent = '❌ ' + e.message;
+    $('probeHint').style.color = '#b23b3b';
+    lbLogAdd('试提取异常：' + e.message);
+  }
+  $('btnProbe').textContent = '试提取（按日期约束）';
+}
+// ③ 学习并归档（试提取成功后的主按钮：一步完成记忆+归档）
+async function applyLearnNow() {
+  if (lbIndex < 0) return;
+  const expected = parseDateInput($("lbCorrectSel").value);
+  if (!expected) return lbMsg("请先点「② 试提取」确认能读出日期（会自动选中），或在下拉里选择", true);
+  const got = await currentPhoto();
+  if (!got) return;
+  const btn = $("btnApplyLearn");
+  btn.innerHTML = "<span class=\"spin\"></span> 学习中";
+  try {
+    const dims = currentPhotoDims();
+    const cfg = cfgFromPanel();
+    if (customRegion) cfg.customRegion = customRegion;
+    const r = await fetch("/api/learn-save", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ w: dims.w, h: dims.h, cfg, expected: dateStr(expected) }),
+    });
+    const j = await r.json();
+    if (!j.ok) { lbMsg("学习保存失败：" + j.error, true); return; }
+    lbLogAdd("参数已学习：" + JSON.stringify(cfg));
+    const j2 = await ocrFile(got.file, cfg, null, true);
+    const newFolder = (j2.ok && j2.date) ? dateStr(j2.date) : "未识别";
+    const it = got.it;
+    if (it.folderName) {
+      it.moved = await moveInDir(it.folderName, newFolder, it.moved);
+      it.folderName = newFolder;
+    } else {
+      await moveToDir(it, newFolder);
+    }
+    $("lbTarget").value = newFolder;
+    setCard(lbIndex, newFolder === "未识别" ? "unknown" : "learned", newFolder);
+    if (it.url) $("lbImg").src = it.url;
+    lbLogAdd("已归档到「" + newFolder + "」");
+    lbMsg("已学习 " + dims.w + "x" + dims.h + " 参数并归档到「" + newFolder + "」— 同尺寸照片后续自动秒识别");
+    refreshLogs();
+  } catch (e) {
+    lbLogAdd("学习异常：" + e.message);
+    lbMsg("❌ " + e.message, true);
+  }
+  btn.textContent = "③ 学习这些参数并归档本张";
+}
+
+async function learnFromLb() {
+  if (lbIndex < 0) return;
+  const expected = parseDateInput($('lbCorrectSel').value);
+  const got = await currentPhoto();
+  if (!got) return;
+  const it = got.it;
+  $('btnLearn').innerHTML = '<span class="spin"></span> 搜索中';
+  $('lbMsg').textContent = '正在按正确日期搜索参数组合…';
+  lbLogAdd('开始学习：期望 ' + dateStr(expected));
+  const pid = String(Date.now()) + Math.floor(Math.random() * 1000);
+  const timer = setInterval(async () => {
+    try {
+      const pr = await fetch('/api/learn-progress?pid=' + pid);
+      const pj = await pr.json();
+      if (pj.ok && pj.n > 0) {
+        $('btnLearn').innerHTML = '<span class="spin"></span> ' + pj.i + '/' + pj.n + ' 组';
+        lbLogAdd('搜索进度 ' + pj.i + '/' + pj.n + ' 组');
+      }
+    } catch (e) {}
+  }, 1200);
+  try {
+    const dims = currentPhotoDims();
+    const buf = await got.file.arrayBuffer();
+    const r = await fetch('/api/learn-upload?expected=' + encodeURIComponent(dateStr(expected)) + '&w=' + dims.w + '&h=' + dims.h + '&name=' + encodeURIComponent(it.name) + '&pid=' + pid, {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: buf,
+    });
+    clearInterval(timer);
+    const j = await r.json();
+    if (!j.ok || !j.found) {
+      lbLogAdd('学习失败：网格全部未命中');
+      lbMsg('❌ 自动搜索未找到能读对的参数。请框选日期所在区域后点「框选学习保存」。', true);
+      return;
+    }
+    lbLogAdd('✅ 学习成功：' + JSON.stringify(j.cfg));
+    lbMsg('✅ 学习成功，正在按新参数重新识别并移动…');
+    const j2 = await ocrFile(got.file, j.cfg, null, true);
+    const newFolder = (j2.ok && j2.date) ? dateStr(j2.date) : '未识别';
+    if (it.folderName) {
+      it.moved = await moveInDir(it.folderName, newFolder, it.moved);
+      it.folderName = newFolder;
+    } else {
+      await moveToDir(it, newFolder);
+    }
+    $('lbTarget').value = newFolder;
+    setCard(lbIndex, newFolder === '未识别' ? 'unknown' : 'learned', newFolder);
+    if (it.url) $('lbImg').src = it.url;
+    lbLogAdd('✅ 已归档到「' + newFolder + '」');
+    lbMsg('✅ 已学会并移动到「' + newFolder + '」— 同尺寸照片后续自动受益');
+    refreshLogs();
+  } catch (e) {
+    clearInterval(timer);
+    lbLogAdd('学习异常：' + e.message);
+    lbMsg('❌ ' + e.message, true);
+  }
+  $('btnLearn').textContent = '识别出错，教它';
+}
+
+async function rerunOne() {
+  if (lbIndex < 0) return;
+  const got = await currentPhoto();
+  if (!got) return;
+  const it = got.it;
+  $('btnRerunOne').innerHTML = '<span class="spin"></span> 识别中';
+  const cfg = cfgFromPanel();
+  lbLogAdd('按当前参数重新识别：' + regionName(cfg.region) + ' / 阈值' + cfg.threshold);
+  try {
+    const j = await ocrFile(got.file, cfg, null, true);
+    const newFolder = (j.ok && j.date) ? dateStr(j.date) : '未识别';
+    if (it.folderName) {
+      it.moved = await moveInDir(it.folderName, newFolder, it.moved);
+      it.folderName = newFolder;
+    } else {
+      await moveToDir(it, newFolder);
+    }
+    $('lbTarget').value = newFolder;
+    setCard(lbIndex, newFolder === '未识别' ? 'unknown' : 'sorted', newFolder);
+    lbLogAdd('结果：' + newFolder);
+    lbMsg('✅ 已重新识别并移动到「' + newFolder + '」');
+    refreshLogs();
+  } catch (e) {
+    lbLogAdd('异常：' + e.message);
+    lbMsg('❌ ' + e.message, true);
+  }
+  $('btnRerunOne').textContent = '按当前参数重新识别本张';
+}
+
+async function manualMove() {
+  if (lbIndex < 0) return;
+  const target = $('lbTarget').value.trim();
+  if (!target) return lbMsg('请填写目标文件夹名，如 2025.10.7', true);
+  if (target !== '未识别' && target !== '识别错误' && !/^\d{4}\.\d{1,2}\.\d{1,2}$/.test(target)) {
+    return lbMsg('文件夹名格式应为 2025.10.7，或填「未识别」/「识别错误」', true);
+  }
+  const it = handleItems[lbIndex];
+  if (!it) return;
+  try {
+    if (it.folderName) {
+      if (it.folderName === target) return lbMsg('已在该文件夹');
+      it.moved = await moveInDir(it.folderName, target, it.moved);
+      it.folderName = target;
+    } else {
+      await moveToDir(it, target);
+    }
+    setCard(lbIndex, target === '未识别' ? 'unknown' : 'learned', target);
+    lbMsg(`✅ 已移动到「${target}」`);
+    refreshLogs();
+  } catch (e) {
+    lbMsg('❌ ' + e.message, true);
+  }
+}
+
+// ---------- 启动 ----------
+restoreRange();
+$('dateAllow').addEventListener('input', fillDateOptions);
+$('gCrop').addEventListener('input', () => { $('gCropV').textContent = $('gCrop').value + '%'; });
+$('gTh').addEventListener('input', () => { $('gThV').textContent = $('gTh').value; });
+$('gThMode').addEventListener('change', () => { $('gTh').disabled = $('gThMode').value !== 'manual'; });
+$('gSmart').addEventListener('change', () => { gcfg.smart = $('gSmart').checked; localStorage.setItem(LOCAL_KEY, JSON.stringify(gcfg)); syncGlobalPanel(); });
+['cfgRegion', 'cfgInvert', 'cfgMaxW', 'cfgPsm', 'cfgWl', 'cfgThMode'].forEach(id => { if ($(id)) $(id).addEventListener('change', schedulePreview); });
+$('cfgCrop').addEventListener('input', () => { $('cfgCropV').textContent = $('cfgCrop').value + '%'; schedulePreview(); });
+$('cfgTh').addEventListener('input', () => { $('cfgThV').textContent = $('cfgTh').value === '0' ? '关' : $('cfgTh').value; schedulePreview(); });
+syncGlobalPanel();
+fillDateOptions();
+syncButtons();
+restoreLastDir();
+restoreJob();
+
+// ---------- 关于弹窗（v1.0.10） ----------
+function showAbout() { $('aboutMask').style.display = 'block'; }
+function closeAbout(e) {
+  if (e && e.target && e.target.id !== 'aboutMask' && e.target.id !== 'aboutClose') return;
+  $('aboutMask').style.display = 'none';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const m = $('aboutMask'); if (m) m.style.display = 'none'; } });
+
+</script>
+
+<!-- 关于弹窗 -->
+<div id="aboutMask" style="display:none" onclick="closeAbout(event)">
+  <div id="aboutCard" onclick="event.stopPropagation()">
+    <button class="lb-close" id="aboutClose" title="关闭" onclick="$('aboutMask').style.display='none'">✕</button>
+    <h3>水印照片智能分类</h3>
+    <span class="ver-badge">v1.2.1 · PaddleOCR 系引擎 · 离线运行</span>
+    <h4>程序介绍</h4>
+    <p>本地离线的照片时间水印识别与归档工具：读取照片角落的日期水印（如 2026-05-08），自动按「年.月.日」建文件夹归类。全程本地运行，不上传任何照片与数据。</p>
+    <h4>核心功能</h4>
+    <ul>
+      <li>拖入文件夹批量识别，按日期自动归档，支持暂停 / 继续 / 停止</li>
+      <li>识别引擎：PaddleOCR 系 RapidOCR-json 离线引擎，单张 0.6~1 秒，中文小字也稳</li>
+      <li>灯箱纠错：大图框选日期区域直接识别，按框归类一步完成</li>
+      <li>纠错学习：保存的框选区域按「图片分辨率」记忆，同尺寸照片自动复用（识别更快更准）</li>
+      <li>日期约束：白名单 / 范围两种写法，只认指定日期，防误归类</li>
+      <li>工作日志：实时识别日志 + 按日期本地存档（logs/ 目录），可回查可删除</li>
+      <li>全程本地离线，不上传任何照片与数据</li>
+    </ul>
+    <h4>使用教程（详细版）</h4>
+    <ul>
+      <li><b>① 基础识别</b>：拖入照片文件夹 → 点「开始识别」。程序自动读水印日期，按「年.月.日」文件夹归类；没读出日期的进「未识别」文件夹。识别中可随时暂停 / 继续 / 停止。</li>
+      <li><b>② 日期约束（强烈推荐）</b>：在「日期约束」输入框填本批照片可能的日期，填完点「确认约束」（已保存，刷新不丢）。作用：只认范围内的日期，读错的数字还会自动修正到范围内，大幅减少误归类。三种写法（分隔符 . / - 均可）：
+        <ul style="margin-top:4px">
+          <li>单个或多个日期（白名单）：<b>2026.5.8,2026.5.9</b>（逗号分隔，可继续加）</li>
+          <li>日期范围：2026.5.1~2026.5.10（波浪号，取首尾两天之间）</li>
+          <li>混合填法也可以，点「清除」解除约束；留空 = 不限制</li>
+        </ul>
+      </li>
+      <li><b>③ 灯箱纠错（某张识别不了时）</b>：点该照片卡片打开灯箱 → <b>按住鼠标拖框，框住日期所在行</b>（框住日期文字本身，不是下面的小字）→ 点「试提取」，新引擎只识别框内区域，读出日期会自动选中 → 点「保存参数学习并归档」按该框重新识别并归类，<b>之后同尺寸照片会自动先复用这个框</b>（更快更准）。</li>
+      <li><b>④ 批量补救</b>：整批都没识别出来时，多半是水印样式特别或图片过暗——挑一张在灯箱里框选试提取，确认能读出来后，其余照片按同样方式抽查几张，剩下仍失败的直接手动归到对应日期文件夹即可。PaddleOCR 引擎下这类情况已很少见。</li>
+      <li><b>⑤ 查日志与学习库</b>：工作日志按日期自动存档（logs/ 目录），顶部下拉可选日期回查「为什么没识别出来」；累计学习条可展开查看/删除单条学习记录。</li>
+    </ul>
+    <h4>程序核心</h4>
+    <p><b>RapidOCR-json 引擎</b>（PaddleOCR PP-OCRv4 检测 + 识别模型，ONNX 离线推理，无需 Python/显卡）+ 自研日期提取（分隔符日期、紧凑日期、时间屏蔽、数字混淆修复）+ 日期约束过滤；Tesseract.js 保留为兜底引擎（引擎缺失时自动切换）。全程本地运行，单张约 0.6~1 秒。</p>
+    <h4>更新记录</h4>
+    <ul>
+      <li><b>v1.2.1</b>（当前）：更换 PaddleOCR 系引擎 RapidOCR-json，单张 0.6~1 秒；纠错学习接入新引擎（框选区域按尺寸复用）；界面精简（去掉「无水印」状态与「喂养学习」）</li>
+      <li><b>v1.0.10</b>：工作日志按日期存档 + 日期下拉回查；参数配置区收缩；关于弹窗</li>
+      <li><b>v1.0.9</b>：框选识别失效修复；实时识别日志；并行识别按 CPU 自适应</li>
+      <li><b>v1.0.1 ~ v1.0.8</b>：初代 Tesseract.js 版本（智能参数、学习引擎、分组预览、灯箱调参、日志分类）</li>
+    </ul>
+    <h4>目录与命名说明</h4>
+    <p>识别成功的照片按<b>「年.月.日」</b>命名文件夹归档（如 2026.5.8）；「未识别」里集中放着暂时没读出日期的照片，可逐个开灯箱框选纠错。</p>
+    <pre>你拖入的照片目录（源目录，结构随意）
+├── IMG_001.jpg          ← 照片平铺在这里也能识别
+└── 子文件夹/…           ← 有子目录也没关系
+
+归档输出目录（识别后自动生成）
+├── <b>2026.5.8/</b>          ← 识别成功：按水印日期建文件夹（点分隔）
+├── 2026.4.17/
+└── <b>未识别/</b>             ← 没读出日期的照片都在这里
+
+程序数据（工具目录内，请勿删除）
+├── learnings.json        ← 学习库：按分辨率记住框选区域 / 参数
+├── engine/               ← PaddleOCR 系识别引擎（勿删，删了会退回旧引擎）
+├── logs/日期.log            ← 工作日志按日期存档
+└── tessdata/             ← 兜底引擎模型</pre>
+    <h4>联系与更多</h4>
+    <div class="contact">
+      <p style="margin:0">💬 QQ：198999397　　📰 微信公众号：Tendered<br>🌐 资源站：轻Q魔客 <a href="https://www.qqmo.cn" target="_blank" style="color:#2b5db8">www.qqmo.cn</a><br>🐛 问题反馈 / 功能建议：欢迎提 Issue 或 Pull Request</p>
+    </div>
+    <div class="foot">© 2026 哒哒 · MIT License 开源 · 引擎：RapidOCR-json（MIT，内置 PaddleOCR PP-OCRv4 模型 Apache-2.0）· 兜底：Tesseract.js v6 · 图像处理：jimp v1</div>
+  </div>
+</div>
+</body>
+</html>

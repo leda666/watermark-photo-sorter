@@ -1,0 +1,29 @@
+{
+  "name": "watermark-photo-sorter",
+  "version": "1.2.1",
+  "description": "本地离线 OCR 识别照片时间水印并按日期自动归档（PaddleOCR 系 RapidOCR-json 引擎，Node.js）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node scripts/download-engine.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "jimp": "^1.6.0",
+    "tesseract.js": "^6.0.0"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ocr",
+    "paddleocr",
+    "rapidocr",
+    "watermark",
+    "photo",
+    "sort",
+    "offline",
+    "nodejs"
+  ]
+}
