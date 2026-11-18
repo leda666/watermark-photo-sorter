@@ -8,11 +8,12 @@ engine/*
 # Node.js 运行时（仅打进 Release 完整包，不入仓库）
 runtime/
 
-# 运行时生成：日志、学习库、任务快照、线程设置
+# 运行时生成：日志、学习库、任务快照、线程设置、实际端口
 logs/
 learnings.json
 job_state.json
 settings.json
+.port
 _learning_tmp/
 
 # 引擎安装临时包
