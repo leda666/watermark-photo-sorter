@@ -41,6 +41,10 @@
 
 ### 安装
 
+> **不想折腾？** 到 [Releases](https://github.com/leda666/watermark-photo-sorter/releases) 下载 `win64-full.zip`，解压后双击 `start.bat` 即可——包内已自带 Node.js 运行时、依赖和 OCR 引擎，**无需安装任何东西**。
+
+源码方式安装：
+
 ```bash
 git clone <本仓库地址>
 cd watermark-photo-sorter
