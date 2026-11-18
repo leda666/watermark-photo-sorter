@@ -24,8 +24,13 @@
 
 ## 📸 截图
 
-> 建议在仓库 `docs/` 放 2~3 张截图后在下方引用：
-> `![主界面](docs/screenshot-main.png)`
+**主界面** —— 拖入照片文件夹，填日期约束，一键识别归档：
+
+![主界面](docs/screenshot-main.png)
+
+**灯箱纠错** —— 大图框选日期区域，试提取后一键学习并归档：
+
+![灯箱纠错](docs/screenshot-lightbox.jpg)
 
 ## 🚀 快速开始
 
